@@ -1,2 +1,1 @@
-# inlupp2
-IOOPM 17
+Repo för inlämningsuppgift 1
