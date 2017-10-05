@@ -19,6 +19,17 @@ struct node {
   node_t *right;
 };
 
+enum key_compare { KEYS_MATCH, MOVE_RIGHT, MOVE_LEFT };
+
+typedef struct {
+  int index;
+  enum { KEYS, ELEMENTS } type;
+  union {
+    K *keys;
+    T *elements;
+  };
+} node_clt;
+
 /// Whether or not two keys matches.
 ///
 /// \param k1 First key
@@ -92,6 +103,7 @@ int max(int a, int b)
 /// Count max node depth
 ///
 /// \param node current node
+/// \returns depth of tree
 int count_depth(node_t *node)
 {
   if (node->left == NULL && node->right == NULL)
@@ -108,6 +120,7 @@ int count_depth(node_t *node)
 
 /// Get the depth of the tree 
 ///
+/// \param tree tree to check
 /// \returns: the depth of the deepest subtree
 int tree_depth(tree_t *tree)
 {
@@ -118,46 +131,90 @@ int tree_depth(tree_t *tree)
 ///
 /// \param k1 First key
 /// \param k2 Second key
-bool move_right(K k1, K k2)
+bool move_right(K node_key, K key)
 {
-  // strcmp return negative when k1 comes before k2
-  return strcmp(k1, k2) < 0;
+  // strcmp return negative when node_key comes before key
+  return strcmp(node_key, key) < 0;
 }
 
-/// Finds correct parent for node.
+/// Returns which direction to move in tree
+/// based on parent and child key
 ///
-/// \param parent node to start the search at.
-/// \param insert node to insert.
-bool insert_node(node_t *parent, node_t *insert)
+/// \param node key of node
+/// \param key key to compare with
+/// \returns direction to move in
+enum key_compare compare_keys(K node, K key)
 {
-  if (key_matches(parent->key, insert->key))
+  int a = strcmp(node, key);
+
+  if (a == 0)     return KEYS_MATCH;
+  else if (a < 0) return MOVE_RIGHT;
+  else            return MOVE_LEFT;
+}
+
+/// Finds appropriate position for key in tree, or node
+/// if key is in tree.
+///
+/// \param tree tree to search in
+/// \param key key to search tree for
+node_t **search_tree(tree_t *tree, K key)
+{
+  node_t **node = &(tree->top);
+  
+  while (*node != NULL)
     {
-      return false;
+      int compare_result = compare_keys((*node)->key, key);
+	
+      if      (compare_result == KEYS_MATCH) return node;
+      else if (compare_result == MOVE_LEFT)  node = &(*node)->left;
+      else if (compare_result == MOVE_RIGHT) node = &(*node)->right;
     }
-  else if (move_right(parent->key, insert->key))
+
+  // Reached end of branch, key not in tree
+  return node;
+}
+
+/// Traverses all nodes in tree
+///
+void traverse_tree(node_t *node, enum tree_order order, tree_action2 fun, void *data)
+{
+  if (node != NULL)
     {
-      if (parent->right == NULL)
-	{
-	  parent->right = insert;
-	  return true;
-	}
-      else
-	{
-	  return insert_node(parent->right, insert);
-	}
+      // PRE ORDER: handle node before both branches
+      if (order == preorder) fun(node->key, node->element, data);
+
+      // traverse left branch
+      traverse_tree(node->left, order, fun, data);
+
+      // IN ORDER: handle node between left and right branches
+      if (order == inorder) fun(node->key, node->element, data);
+
+      // traverse right branch
+      traverse_tree(node->right, order, fun, data);
+
+      // POST ORDER: handle node after both branches
+      if (order == postorder) fun(node->key, node->element, data);
     }
-  else
-    {
-      if (parent->left == NULL)
-	{
-	  parent->left = insert;
-	  return true;
-	}
-      else
-	{
-	  return insert_node(parent->left, insert);
-	}
-    }
+}
+
+/// Applies a function to all elements in the tree in a specified order.
+/// Example (using shelf as key):
+///
+///     tree_t *t = tree_new();
+///     tree_insert(t, "A25", some_item);
+///     int number = 0;
+///     tree_apply(t, inorder, print_item, &number);
+///
+/// where print_item is a function that prints the number and increments it,
+/// and prints the item passed to it. 
+///
+/// \param tree the tree
+/// \param order the order in which the elements will be visited
+/// \param fun the function to apply to all elements
+/// \param data an extra argument passed to each call to fun (may be NULL)
+void tree_apply(tree_t *tree, enum tree_order order, tree_action2 fun, void *data)
+{
+  traverse_tree(tree->top, order, fun, data);
 }
 
 /// Insert element into the tree. Returns false if the key is already used.
@@ -167,44 +224,18 @@ bool insert_node(node_t *parent, node_t *insert)
 /// \param elem the element 
 /// \returns: true if successful, else false
 bool tree_insert(tree_t *tree, K key, T elem)
-{ 
+{
   node_t *new = calloc(1, sizeof(node_t));
   new->key = strdup(key);
   new->element = elem;
-  
-  if (tree->top == NULL)
-    {
-      tree->size = 1;
-      tree->top = new;
-      return true;
-    }
-  else if (insert_node(tree->top, new))
-    {
-      tree->size++;
-      return true;
-    }
 
-  return false;
-}
+  node_t **leaf = search_tree(tree, key);
 
-/// Helper for tree_has_key TODO
-///
-/// \param tree pointer to the tree
-/// \param key the key of elem to be removed
-/// \returns: true if key is a key in tree
-bool look_for_key(node_t *node, K key)
-{
-  if (key_matches(node->key, key))
+  if (*leaf == NULL)
     {
+      *leaf = new;
+      ++tree->size;
       return true;
-    }
-  else if (move_right(node->key, key) && node->right != NULL)
-    {
-      return look_for_key(node->right, key);
-    }
-  else if (node->left != NULL)
-    {
-      return look_for_key(node->right, key);
     }
   else
     {
@@ -219,28 +250,7 @@ bool look_for_key(node_t *node, K key)
 /// \returns: true if key is a key in tree
 bool tree_has_key(tree_t *tree, K key)
 {
-  return tree->top == NULL ? false : look_for_key(tree->top, key);
-}
-
-/// Helper function for tree_get
-///
-/// \param node Node to search at.
-/// \param key Key to find.
-/// \returns Matching node.
-T find_element(node_t *node, K key)
-{
-  if (key_matches(node->key, key))
-    {
-      return node->element;
-    }
-  else if (move_right(node->key, key))
-    {
-      return find_element(node->right, key);
-    }
-  else
-    {
-      return find_element(node->left, key);
-    }
+  return *(search_tree(tree, key)) == NULL;
 }
 
 /// Returns the element for a given key in tree.
@@ -251,71 +261,28 @@ T find_element(node_t *node, K key)
 /// \returns: true if key is a key in tree
 T tree_get(tree_t *tree, K key)
 {
-  return find_element(tree->top, key);
+  return (*search_tree(tree, key))->element;
 }
 
-/// Collects elements in tree in ascending order into array.
+/// Adds key or elem to node_clt
 ///
-/// \param node Current node to collect.
-/// \param elements Array to store elements in.
-/// \param cur_index Current index to store element in array at.
-/// \returns next available index in array.
-int collect_elements_old(node_t *node, T *elements, int cur_index)
+/// \param key key of node
+/// \param elem element of node
+/// \param data node_clt to add to
+void collect_nodes(K key, T elem, void *data)
 {
-  if (node->left == NULL && node->right == NULL)
+  node_clt *clt = data;
+  
+  if (clt->type == KEYS)
     {
-      // End of branch
-      elements[cur_index] = node->element;
-      return cur_index + 1;
+      clt->keys[clt->index] = key;
     }
   else
     {
-      int new_index = cur_index;
-      if (node->left != NULL)
-	{
-	  // Collect nodes in left branch first
-	  new_index = collect_elements_old(node->left, elements, cur_index);
-	}
-
-      // Add this node after every node on the left branch has been added
-      elements[new_index] = node->element;
-      
-      if (node->right == NULL)
-	{
-	  // Return new index to parent node when done with this node
-	  return new_index + 1;
-	}
-      else
-	{
-	  // Collect all nodes in right branch before parent node is collected
-	  return collect_elements_old(node->right, elements, new_index + 1);
-	}
+      clt->elements[clt->index] = elem;
     }
-}
 
-T *collect_elements(node_t *node, T *elements)
-{
-  // End of branch
-  if (node->left == NULL && node->right == NULL)
-    {
-      // Increment AFTER this node has been added
-      *elements = node->element;
-      return ++elements;
-    }
-  else
-    {
-      // Collect nodes in left branch first
-      if (node->left != NULL) elements = collect_elements(node->left, elements);
-
-      // Increment AFTER this node has been added
-      *elements = node->element;
-
-      // Collect all nodes in right branch after parent node is collected
-      if (node->right != NULL) return collect_elements(node->right, ++elements);
-
-      // Move back up tree
-      return ++elements;
-    }
+  clt->index++;
 }
 
 /// Returns an array holding all the elements in the tree
@@ -324,58 +291,19 @@ T *collect_elements(node_t *node, T *elements)
 ///
 /// \param tree pointer to the tree
 /// \returns: array of tree_size() elements
-T *tree_elements_old(tree_t *tree)
-{
-  int size = tree_size(tree);
-  T *elements = calloc(size, sizeof(T));
-  if (size > 0)
-    {
-      collect_elements_old(tree->top, elements, 0);
-    }
-  return elements;
-}
-
 T *tree_elements(tree_t *tree)
 {
   int size = tree_size(tree);
   T *elements = calloc(size, sizeof(T));
+  node_clt clt = { .index = 0, .type = ELEMENTS, .elements = elements };
+    
   if (size > 0)
     {
-      collect_elements(tree->top, elements);
+      tree_apply(tree, inorder, collect_nodes, &clt);
     }
+  
   return elements;
 }
-
-/// Collects elements in tree in ascending order into array.
-///
-/// \param node Current node to collect.
-/// \param elements Array to store elements in.
-/// \param cur_index Current index to store element in array at.
-/// \returns next available index in array.
-K *collect_keys(node_t *node, K *keys)
-{
-  if (node->left == NULL && node->right == NULL)
-    {
-      // Move back up tree when end is reached
-      *keys = node->key;
-      return ++keys;
-    }
-  else
-    {
-      // Collect nodes in left branch first
-      if (node->left != NULL) keys = collect_keys(node->left, keys);
-
-      // Add current node
-      *keys = node->key;
-      
-      // Collect all nodes in right branch after parent node is collected
-      if (node->right != NULL) return collect_keys(node->right, ++keys);
-
-      // Move back up tree
-      return ++keys;
-    }
-}
-
 
 /// Returns an array holding all the keys in the tree
 /// in ascending order.
@@ -386,11 +314,55 @@ K *tree_keys(tree_t *tree)
 {
   int size = tree_size(tree);
   K *keys = calloc(size, sizeof(K));
+  node_clt clt = { .index = 0, .type = KEYS, .keys = keys };
+  
   if (size > 0)
     {
-      //int index = -1;
-      collect_keys(tree->top, keys);
+      tree_apply(tree, inorder, collect_nodes, &clt);
     }
   
   return keys;
+}
+
+int main(void)
+{
+  // TREE NEW
+  tree_t *tree = tree_new();
+
+  int length = 7;
+  char *insert_keys[7] = {"E", "C", "G", "B", "D", "F", "H"};
+
+  // TREE INSERT
+  for (int i = 0; i < length; ++i)
+    {
+      int el = i;
+      tree_insert(tree, insert_keys[i], &el);
+    }
+
+
+  K key = "B";
+
+  // TREE HAS KEY
+  if (!tree_has_key(tree, key))
+    {
+      int el = 42;
+      tree_insert(tree, key, &el);
+    }
+
+
+  // TREE KEYS
+  K *keys = tree_keys(tree);
+
+  // TREE ELEMENTS
+  T *elements = tree_elements(tree);
+
+  // TREE SIZE
+  printf("depth: %d", tree_size(tree));
+
+  // TREE DEPTH
+  printf("depth: %d", tree_depth(tree));
+
+  // TREE GET
+  
+  return 0;
 }
