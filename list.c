@@ -1,131 +1,199 @@
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-
+#include <time.h>
+#include <math.h>
+#include <ctype.h>
+#include <string.h>
 #include "list.h"
 
-typedef struct link link_t;
-
-struct list {
+struct list
+{
   link_t *first;
   link_t *last;
 };
-
-struct link {
+struct link
+{
   L value;
   link_t *next;
 };
 
-/**
- *  Create new list.
- */
+
+
+/// Allocates memory for/and creates a list
+///
+/// \returns: empty list
 list_t *list_new()
 {
   return calloc(1, sizeof(list_t));
 }
 
-/**
- * Adds item to end of list.
- */
-void list_append(list_t *list, L elem)
+
+/// Creates a link between current value and next link
+///
+/// \param value of new element
+/// \param next next link in line
+/// \returns: link, part of a list
+link_t *link_new(L value, link_t *next)
 {
   link_t *new = calloc(1, sizeof(link_t));
-  new->value = elem;
 
-  if (list->last)
+  if (new != NULL)
     {
-      list->last->next = new;
+      new -> value = value;
+      new -> next = next;
+    
     }
-  else
-    {
-      // If last is not set, neither is first
-      list->first = new;
-    }
-
-  list->last = new;
+  return new;
 }
 
-/**
- * Adds item to beginning of list.
- */
-void list_prepend(list_t *list, L elem)
-{
-  link_t *new = calloc(1, sizeof(link_t));
-  new->value = elem;
 
-  if (list->first)
+
+/// Adds an item elem to the end of a list
+///
+/// \param list list which is appended upon
+/// \param elem element that is added to the list
+void list_append(list_t *list, L elem)
+{
+  link_t *new = link_new(elem, NULL);
+  if (list->first == NULL)
     {
-      new->next = list->first;
+      list->first = new;
+      list->last = new;
     }
   else
     {
-      // If first is not set, neither is last
+      list->last->next = new;
       list->last = new;
     }
 
-  list->first = new;
 }
 
-/**
- * Inserts item in list at index.
- */
+
+/// Adds an item elem to the beginning of a list
+///
+/// \param list list which is prepended upon
+/// \param elem element that is added to the list
+void list_prepend(list_t *list, L elem)
+{
+  list->first = link_new(elem, list->first);
+  if (list->last == NULL)
+    {
+      list->last = list->first;
+    }
+}
+
+
+
+/// Returns the value of the element located at point of index
+///
+/// \param list list that is searched for value
+/// \param index indicator for which element to return
+/// \returns: pointer to whatever value is stored at index
+L *list_get(list_t *list, int index)
+{
+  link_t *cursor = list->first;
+  for (int i = 0; cursor->next != NULL && i < index; i++)
+    {
+      cursor = cursor->next;
+    }
+  return cursor->value;
+}
+
+
+/// Adds an item elem at the point of index in a list
+///
+/// \param list the list
+/// \param index point of the list where the element is added
+/// \param elem element to be added to list
+/// \returns: true if successful, else false
 bool list_insert(list_t *list, int index, L elem)
 {
-  int size = list_length(list);
-
-  // Make sure index is in range [-size, size]
-  if (index < size * -1 || index > size)
+  
+  // At the start of the list
+  if (index == 0)
     {
-      return false;
-    }
-  else
-    {
-      link_t *new = calloc(1, sizeof(link_t));
-      new->value = elem;
-
-      if (size == 0)
-	{
-	  list->first = new;
-	  list->last = new;
-	}
-      else
-	{
-	  // Handle negative indices:
-	  // list l = {a, b, c, d}, size = 4, insert x at -2; -2 + 4 = 2 => {a, b, x, c, d}
-	  int pos = index < 0 ? index + size : index;
-	  link_t *cursor = list->first;
-
-	  if (pos == 0)
-	    {
-	      list_prepend(list, elem);
-	    }
-	  else 
-	    {
-	      // Move cursor to index
-	      for (int i = 1; i < pos; i++)
-		{
-		  cursor = cursor->next;
-		}
-
-	      // Insert item
-	      link_t *tmp = cursor->next;
-	      cursor->next = new;
-	      new->next = tmp;
-	    }
-	}
-
+      list_prepend(list, elem);
       return true;
     }
+
+  // At the end of the list
+  else if (index == list_length(list))
+    {
+      list_append(list, elem);
+      return true;
+    }
+
+  // Out of bounds (index too small)
+  else if (index < 0)
+    {
+      return list_insert(list, abs(index), elem);
+    }
+
+  // Out of bounds (index too large)
+  else if (index > list_length(list))
+    {
+      puts("Not a valid index.\n");
+      return false;
+    }
+  
+  // Unnecessary piece of code?
+  // 
+  // else if (index < 0)
+  //    {
+  //      index = list_length(list)  + index;
+  //    }
+  //
+  // else if (index > list_length(list))
+  //    {
+  //      puts("Not a valid index.\n");
+  //      return false;
+  //    }
+  
+  link_t *cursor = list->first;
+  for (int i = 0; cursor != NULL && i < index-1; ++i)
+    {
+      cursor = cursor->next;
+    }
+  
+  link_t *tmp = cursor->next;
+  link_t *new_link = link_new(elem, tmp);
+  cursor->next = new_link;
+  
+  return true;
+
 }
 
-/**
- * Removes item at index in list and save value at elem.
- */
+
+
+
+/// Get the length of a list
+///
+/// \param list the list
+/// \returns: length of the list
+int list_length(list_t *list)
+{
+  int counter = 0;
+  link_t *cursor = list->first;
+  while (cursor != NULL)
+    {
+      cursor = cursor->next;
+      counter = counter + 1;
+    }
+  return counter;
+}
+
+
+
+/// Removes an element at the point of index
+///
+/// \param list the list
+/// \param index point of the list indicating the element
+/// \param elem element to be removed
+/// \returns: true if successful, else false
 bool list_remove(list_t *list, int index, L *elem)
 {
   // Link to remove
-  link_t *rem = list->first;
+  link_t *remove = list->first;
 
   int size = list_length(list);
   int pos = index < 0 ? index + size - 1 : index;
@@ -153,63 +221,39 @@ bool list_remove(list_t *list, int index, L *elem)
       link_t *prev;
       for (int i = 0; i < pos; ++i)
 	{
-	  prev = rem;
-	  rem = rem->next;
+	  prev = remove;
+	  remove = remove->next;
 	}
       
-      prev->next = rem->next;
+      prev->next = remove->next;
     }
   
-  if (elem != NULL) elem = rem->value;
+  if (elem != NULL) elem = remove->value;
   
-  free(rem);
+  free(remove);
   return true;
 }
 
-/**
- * Returns value at index in list.
- */
-L list_get(list_t *list, int index)
+
+/// Get the value of the first element in a list
+///
+/// \param list the list
+/// \returns: pointer to the first value in list
+L *list_first(list_t *list)
 {
-  link_t *cursor = list->first;
-
-  for (int i = 0; cursor && i < index; ++i)
-    {
-      cursor = cursor->next;
-    }
-
-  return cursor->value;
+  return list->first->value;
 }
 
-/**
- * Shorthand for list_get(list, 0);
- */
-L list_first(list_t *list)
+
+
+/// Get the value of the last element in a list
+///
+/// \param list the list
+/// \returns: pointer to the last value in list
+L *list_last(list_t *list)
 {
-  return list->first->value;  
+  return list->last->value;
 }
 
-/**
- * Shorthand for list_get(list, -1);
- */
-L list_last(list_t *list)
-{
-  return list->last->value;  
-}
 
-/**
- * Returns length of list.
- */
-int list_length(list_t *list)
-{
-  link_t *cursor = list->first;
-  int count = 0;
 
-  while (cursor != NULL)
-    {
-      cursor = cursor->next;
-      ++count;
-    }
-
-  return count;
-}
