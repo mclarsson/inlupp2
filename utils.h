@@ -38,4 +38,6 @@ void print_edit_menu();
 char ask_question_edit_menu();
 char ask_question_add();
 
+char *ask_menu_option(char *question);
+
 #endif
