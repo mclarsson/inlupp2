@@ -125,9 +125,9 @@ bool list_insert(list_t *list, int index, L elem)
 
   // Out of bounds (index too small)
   else if (index < 0)
-    {
-      return list_insert(list, abs(index), elem);
-    }
+      {
+        return list_insert(list, index + list_length(list), elem);
+      }
 
   // Out of bounds (index too large)
   else if (index > list_length(list))
@@ -135,19 +135,8 @@ bool list_insert(list_t *list, int index, L elem)
       puts("Not a valid index.\n");
       return false;
     }
+
   
-  // Unnecessary piece of code?
-  // 
-  // else if (index < 0)
-  //    {
-  //      index = list_length(list)  + index;
-  //    }
-  //
-  // else if (index > list_length(list))
-  //    {
-  //      puts("Not a valid index.\n");
-  //      return false;
-  //    }
   
   link_t *cursor = list->first;
   for (int i = 0; cursor != NULL && i < index-1; ++i)
