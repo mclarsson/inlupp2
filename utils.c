@@ -145,7 +145,6 @@ answer_t ask_question(char *question, check_func check, convert_func convert)
   } while(!passed || length == 0);
   
   return convert(str);
-    
 }
 
 /**
@@ -178,6 +177,9 @@ char *ask_question_string(char *question/*, char *buf, int buf_siz*/)
   return ask_question(question, not_empty, (convert_func) strdup).s;
 }
 
+/// Determines if string is in shelf format (A12)
+///
+/// \returns true if str is in correct format, false otherwise
 bool is_shelf(char *str)
 {
   // check if first character is letter
@@ -196,141 +198,149 @@ bool is_shelf(char *str)
   }
 }
 
-/**
- * ask_question_shelf
- */
+/// Asks for a shelf name
+///
 char *ask_question_shelf(char *question)
 {
   return ask_question(question, is_shelf, (convert_func) strdup).s;
 }
 
+/// Asks for a char
+///
 char ask_question_char(char *question)
 {
   printf("%s ", question);
   char c = fgetc(stdin);
-  puts("");
   clear_input_buffer();
   return c;
 }
 
 
-/// Asks for char that is in string
+/// Asks for char that is in string, not case sensitive
 ///
+/// example:
+///     ask_question_char_in_str("[J]a, [N]ej eller [A]vbryt", "JNA");
 char ask_question_char_in_str(char *question, char *str)
 {
   char c;
   
   do {
-    c = tolower(ask_question_char(question));
+    c = toupper(ask_question_char(question));
   } while (strchr(str, c) == NULL);
   
   return toupper(c);
 }
 
-/**
- 
- * print
- 
- */
-void print (char *str)
+
+/// Returns the character inputed if it is in brackets in paramater (case insensitive)
+///
+/// example: ask_menu_option("[J]a, [N]ej eller [A]vbryt") can return
+/// only when input is J/j, N/n, or A/a
+char *ask_menu_option(char *menu)
 {
-  while (*str) {
-    putchar(*str);
-    str++;
-  }
-}
-
-/**
- 
- * println
- 
- */
-void println (char *str)
-{
-  print(str);
-  putchar('\n');
-}
-
-/**
- 
- * Swap
- 
- */
-void swap(int *a, int *b)
-{
-  int tmp = *a;
-  *a = *b;
-  *b = tmp;
-}
-
-void print_menu()
-{
-  fputs("\n", stdout);
-  fputs("[L]ägga till en vara\n", stdout);
-  fputs("[T]a bort en vara \n", stdout);
-  fputs("[R]edigera en vara\n", stdout);
-  fputs("Ån[g]ra senaste ändringen\n", stdout);
-  fputs("Lista [h]ela varukatalogen\n", stdout);
-  fputs("[A]vsluta\n\n", stdout);
-}
-
-char ask_question_menu()
-{
- print_menu();
-
-  char menu_items[] = "LlTtRrGgHhAa";
-  char c = 'c';
-
+  // Gettig menu items
   
+  char *items[255];
+  char *question = menu;
+  int items_length = 0;
+  while (*menu != '\0' && items_length < 255)
+    {
+      if (*menu == '[')
+	{
+	  // Skip current [
+	  ++menu;
+	  
+	  char str[16] = "";
+	  int str_length = 0;
+	  while (*menu != ']' && str_length < 16)
+	    {
+	      str[str_length] = toupper(*menu);
+	      ++str_length;
+	      ++menu;
+	    }
+	  str[str_length] = '\0';
+	  
+	  items[items_length] = strdup(str);
+	  ++items_length;
+	}
+      else
+	{
+	  ++menu;
+	}
+    }
+
+  // Getting input
+
+  int str_size = 16;
+  char str[str_size];
+  int length = 0;
+  bool passed = false;
+
   do {
-    // Ask for c while c is not in menu_items
-    c = ask_question_char("Vad vill du göra?");
-  } while (strchr(menu_items, c) == NULL);
-  
-  return toupper(c);
+    puts(question);
+    length = read_string(str, str_size);
+
+    // Convert input to uppercase
+    for (int i = 0; i < str_size; i++) str[i] = toupper(str[i]);
+
+    // Check if input is valid
+    for (int i = 0; i < items_length; i++)
+      { 
+	// Check if item contains -, in which case it's an interval
+	if (strchr(items[i], '-') != NULL && is_number(str))
+	  {
+	    // Split interval into low and high boundaries
+	    char low_str[8];
+	    char high_str[8];
+	    int str_index = 0;
+	    int high_index = 0;
+
+	    // Copy low boundary
+	    for (; items[i][str_index] != '-'; ++str_index)
+	      {
+		low_str[str_index] = items[i][str_index];
+	      }
+
+	    // skip -
+	    ++str_index;
+
+	    // Copy high boundary
+	    for (; items[i][str_index] != '\0'; ++str_index, ++high_index)
+	      {
+		high_str[high_index] = items[i][str_index];
+	      }
+
+	    int input_number = atoi(str);
+	    int low = atoi(low_str);
+	    int high = atoi(high_str);
+
+	    // Make sure input is within interval
+	    if (input_number >= low && input_number <= high)
+	      {
+		passed = true;
+	      }
+	  }
+	else if (!strcmp(str, items[i]))
+	  {
+	    // Strings match
+	    passed = true;
+	  }
+      }
+
+    if (passed == false)
+      {
+	fprintf(stdout, "Felaktig inmatning: %s \n", str);
+      }
+    
+  } while(!passed || length == 0);
+
+  return strdup(str);
 }
 
-void print_edit_menu()
+int main(void)
 {
-  fputs("[B]eskrivning\n", stdout);
-  fputs("[P]ris\n", stdout);
-  fputs("[L]agerhylla\n", stdout);
-  fputs("An[t]al\n", stdout);
-}
-
-void print_add_menu()
-{
-  fputs("\n[J]a\n",stdout);
-  fputs("[N]ej\n",stdout);
-  fputs("[R]edigera\n",stdout);
-}
-
-char ask_question_edit_menu()
-{
-  print_edit_menu();
-
-  char menu_items[] = "BbPpLlTtAa";
-  char c = 'c';
+  char *test = ask_menu_option("Visa vara [1-20], [n]ej eller [a]vbryt");
+  puts(test);
   
-  do {
-    // Ask for c while c is not in menu_items
-    c = ask_question_char("Välj rad eller [a]vbryt");
-  } while (strchr(menu_items, c) == NULL);
-  
-  return toupper(c);
-}
-
-char ask_question_add()
-{
-  print_add_menu();
-
-  char menu_items[] = "JjNnRr";
-  char c = 'c';
-  
-  do {
-    // Ask for c while c is not in menu_items
-    c = ask_question_char("Välj rad eller [a]vbryt");
-  } while (strchr(menu_items, c) == NULL);
-  
-  return toupper(c);
+  return 0;
 }

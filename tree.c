@@ -30,16 +30,6 @@ typedef struct {
   };
 } node_clt;
 
-/// Whether or not two keys matches.
-///
-/// \param k1 First key
-/// \param k2 Second key
-/// \returns If they match
-bool key_matches(K k1, K k2)
-{
-  return strcmp(k1, k2) == 0;
-}
-
 /// Creates a new tree
 ///
 /// \returns: empty tree
@@ -127,16 +117,6 @@ int tree_depth(tree_t *tree)
   return tree->top == NULL ? 0 : count_depth(tree->top);
 }
 
-/// Help function for node insertion, whether or not k1 is alphabetically before k2
-///
-/// \param k1 First key
-/// \param k2 Second key
-bool move_right(K node_key, K key)
-{
-  // strcmp return negative when node_key comes before key
-  return strcmp(node_key, key) < 0;
-}
-
 /// Returns which direction to move in tree
 /// based on parent and child key
 ///
@@ -157,6 +137,7 @@ enum key_compare compare_keys(K node, K key)
 ///
 /// \param tree tree to search in
 /// \param key key to search tree for
+/// \returns double pointer to correct position
 node_t **search_tree(tree_t *tree, K key)
 {
   node_t **node = &(tree->top);
@@ -176,6 +157,10 @@ node_t **search_tree(tree_t *tree, K key)
 
 /// Traverses all nodes in tree
 ///
+/// \param node current node
+/// \param order the order in which the elements will be visited
+/// \param fun the function to apply to all elements
+/// \param data an extra argument passed to each call to fun (may be NULL)
 void traverse_tree(node_t *node, enum tree_order order, tree_action2 fun, void *data)
 {
   if (node != NULL)
@@ -264,7 +249,8 @@ T tree_get(tree_t *tree, K key)
   return (*search_tree(tree, key))->element;
 }
 
-/// Adds key or elem to node_clt
+/// Adds key or elem to node_clt, tree_action2 for tree_elements
+/// and tree_keys
 ///
 /// \param key key of node
 /// \param elem element of node
@@ -324,45 +310,3 @@ K *tree_keys(tree_t *tree)
   return keys;
 }
 
-int main(void)
-{
-  // TREE NEW
-  tree_t *tree = tree_new();
-
-  int length = 7;
-  char *insert_keys[7] = {"E", "C", "G", "B", "D", "F", "H"};
-
-  // TREE INSERT
-  for (int i = 0; i < length; ++i)
-    {
-      int el = i;
-      tree_insert(tree, insert_keys[i], &el);
-    }
-
-
-  K key = "B";
-
-  // TREE HAS KEY
-  if (!tree_has_key(tree, key))
-    {
-      int el = 42;
-      tree_insert(tree, key, &el);
-    }
-
-
-  // TREE KEYS
-  K *keys = tree_keys(tree);
-
-  // TREE ELEMENTS
-  T *elements = tree_elements(tree);
-
-  // TREE SIZE
-  printf("depth: %d", tree_size(tree));
-
-  // TREE DEPTH
-  printf("depth: %d", tree_depth(tree));
-
-  // TREE GET
-  
-  return 0;
-}
