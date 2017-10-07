@@ -235,7 +235,7 @@ bool tree_insert(tree_t *tree, K key, T elem)
 /// \returns: true if key is a key in tree
 bool tree_has_key(tree_t *tree, K key)
 {
-  return *(search_tree(tree, key)) == NULL;
+  return *(search_tree(tree, key)) != NULL;
 }
 
 /// Returns the element for a given key in tree.

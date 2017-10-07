@@ -232,7 +232,8 @@ char ask_question_char_in_str(char *question, char *str)
 }
 
 
-/// Returns the character inputed if it is in brackets in paramater (case insensitive)
+/// Returns the character inputed if it is in brackets in paramater (case insensitive).
+/// Also supports interval [low-high] ([1-20]).
 ///
 /// example: ask_menu_option("[J]a, [N]ej eller [A]vbryt") can return
 /// only when input is J/j, N/n, or A/a
@@ -335,12 +336,4 @@ char *ask_menu_option(char *menu)
   } while(!passed || length == 0);
 
   return strdup(str);
-}
-
-int main(void)
-{
-  char *test = ask_menu_option("Visa vara [1-20], [n]ej eller [a]vbryt");
-  puts(test);
-  
-  return 0;
 }

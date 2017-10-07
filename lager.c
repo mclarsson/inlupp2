@@ -38,12 +38,27 @@ void populate_catalog(tree_t *catalog, int size)
     }
 }
 
+
+/// Prints outmain  menu
+///
+void print_main_menu()
+{
+  fputs("\n", stdout);
+  fputs("[L]ägga till en vara\n", stdout);
+  fputs("[T]a bort en vara \n", stdout);
+  fputs("[R]edigera en vara\n", stdout);
+  fputs("Ån[g]ra senaste ändringen\n", stdout);
+  fputs("Lista [h]ela varukatalogen\n", stdout);
+  fputs("[A]vsluta\n", stdout);
+  fputs("\n", stdout);
+}
+
 int event_loop()
 {
   tree_t *catalog = tree_new();
   action_t *act = action_new();
 
-  populate_catalog(catalog, 50);
+  // populate_catalog(catalog, 50);
   
   puts("\n\n Välkommen till lagerhantering 1.0");
   puts(" ================================= \n");
@@ -52,7 +67,7 @@ int event_loop()
   
   while (true)
     {
-      print_menu();
+      print_main_menu();
       input = toupper(ask_question_char(" > "));
 
       switch (input)
@@ -70,7 +85,7 @@ int event_loop()
 	case 'T':
 	  //remove goods
 	  puts("Ej implementerad än");
-	  remove_goods(catalog);
+	  //remove_goods(catalog);
 	  break;
 
 	case 'R':
