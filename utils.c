@@ -22,18 +22,23 @@ bool is_float(char *str)
   bool hasPoint = false;
 
   // Negative numbers or start with . (.132)
-  if (str[0] != '-' && str[0] != '.' && !isdigit(str[0])) {
-    return false;
-  }
-  
-  for (int i = 1; i < len; i++) {
-    if (str[i] == '.') {
-      // All floats have a .
-      hasPoint = true;
-    } else if (!isdigit(str[i])) {
+  if (str[0] != '-' && str[0] != '.' && !isdigit(str[0]))
+    {
       return false;
     }
-  }
+  
+  for (int i = 1; i < len; i++)
+    {
+      if (str[i] == '.')
+        {
+          // All floats have a .
+          hasPoint = true;
+        }
+      else if (!isdigit(str[i]))
+        {
+          return false;
+        }
+    }
   
   return hasPoint;
 }
@@ -48,15 +53,18 @@ bool is_number(char *str) {
   int len = strlen(str);
 
   // Negative numbers
-  if (str[0] != '-' && !isdigit(str[0])) {
-    return false;
-  }
-  
-  for (int i = 1; i < len; i++) {
-    if (!isdigit(str[i])) {
+  if (str[0] != '-' && !isdigit(str[0]))
+    {
       return false;
     }
-  }
+  
+  for (int i = 1; i < len; i++)
+    {
+      if (!isdigit(str[i]))
+        {
+          return false;
+        }
+    }
   
   return true;
 }
@@ -86,16 +94,21 @@ int read_string(char *buf, int buf_siz)
   int c;
 
   // Fill buffer
-  while (i < max) {
-    c = getchar();
+  while (i < max)
+    {
+      c = getchar();
     
-    if (c != '\n' && c != EOF) {
-      buf[i] = c;
-      i++;
-    } else {
-      break;
+      if (c != '\n' && c != EOF)
+        {
+          buf[i] = c;
+          i++;
+        }
+    
+      else
+        {
+          break;
+        }
     }
-  }
 
   // String to long for buffer size
   if (i == max) {
@@ -179,24 +192,31 @@ char *ask_question_string(char *question/*, char *buf, int buf_siz*/)
 
 /// Determines if string is in shelf format (A12)
 ///
-/// \returns true if str is in correct format, false otherwise
+/// \param str potential shelf to be checked
+/// \returns: true if str is in correct format, false otherwise
 bool is_shelf(char *str)
 {
-  // check if first character is letter
-  if (!isupper(str[0]) || strlen(str) <= 1) {
-    return false;
-  } else {
-    // Check if all other characters are digits
-    for (int i = 1; i < strlen(str); i++) {
-      if (!isdigit(str[i])) {
-	return false;
-      }
+  // Checks if the string is a legit shelf of length 2
+  if (isalpha(str[0]) && isdigit(str[1]) && strlen(str) < 3)
+    {
+      str++;
+      return is_number(str);
     }
 
-    // passed all checks
-    return true;
-  }
+  // Checks if the string is a legit shelf of length 3
+  else if (isalpha(str[0]) && isdigit(str[1]) && isdigit(str[2]) && strlen(str) < 4)
+    {
+      str++;
+      return is_number(str);
+    }
+
+  // If the string is not a legit shelf
+  else
+    {
+      return false;
+    }
 }
+
 
 /// Asks for a shelf name
 ///

@@ -43,7 +43,7 @@ struct action
 
 /// Creates new action tracker
 ///
-/// \returns new action
+/// \returns: new action
 action_t *action_new()
 {
   action_t *new = calloc(1, sizeof(action_t));
@@ -56,7 +56,7 @@ action_t *action_new()
 ///
 /// \param name Name of shelf (shelf format expected)
 /// \param amount Amount of items on shelf
-/// \returns pointer to shelf
+/// \returns: pointer to shelf
 shelf_t *make_shelf(char *name, int amount)
 {
   shelf_t *new = calloc(1, sizeof(shelf_t));
@@ -71,7 +71,7 @@ shelf_t *make_shelf(char *name, int amount)
 ///
 /// \param description Description of item.
 /// \param price Price of item.
-/// \returns pointer to item.
+/// \returns: pointer to item.
 item_t *make_item(char *description, int price)
 {
   item_t *new = calloc(1, sizeof(item_t));
@@ -132,6 +132,11 @@ void undo_action(tree_t *tree, action_t *action)
   action->type = NOTHING;
 }
 
+/// Checks to see if the two keys are the same
+///
+/// \param s1 string one
+/// \param s2 string two
+/// \returns: true if they are the same, else false
 bool is(char *s1, char *s2)
 {
   return strcmp(s1, s2) == 0;
@@ -139,6 +144,8 @@ bool is(char *s1, char *s2)
 
 /// Prints name and item
 ///
+/// \param name name of ware
+/// \param item item which details are printed out
 void print_item(char *name, item_t *item)
 {
   printf("\nNamn:\t\t%s \n", name);
@@ -156,7 +163,9 @@ void print_item(char *name, item_t *item)
 
 /// Check if shelf exists in system
 ///
-/// \returns true if shelf is already in use
+/// \param tree the tree to be searched
+/// \param name shelf name to be searched for
+/// \returns: true if shelf is already in use, else false
 bool shelf_exists(tree_t *tree, char *name)
 {
   L *items = tree_elements(tree);
@@ -184,7 +193,8 @@ bool shelf_exists(tree_t *tree, char *name)
 
 /// Asks for input and creates shelf
 ///
-/// \returns new shelf
+/// \param tree the tree where the shelf is created in
+/// \returns: new shelf
 shelf_t *input_shelf(tree_t *tree)
 {
   bool exists = true;
@@ -207,7 +217,8 @@ shelf_t *input_shelf(tree_t *tree)
 
 /// Asks for inputs and creates item
 ///
-/// \returns new item
+/// \param tree the tree in which the item is created
+/// \returns: new item
 item_t *input_item(tree_t *tree)
 {
   char *description = ask_question_string("Beskrivning:");
@@ -220,6 +231,8 @@ item_t *input_item(tree_t *tree)
 
 /// Adds item to tree
 ///
+/// \param tree the tree in which the item is added
+/// \param action what to do in case of an undo call
 void add_goods(tree_t *tree, action_t *action)
 { 
   bool abort = false;
@@ -352,6 +365,10 @@ void list_goods(tree_t *tree)
     } 
 }
 
+/// Edits parameters of current items
+///
+/// \param tree the tree containing the items
+/// \param action what to do in case of an undo call
 void edit_goods(tree_t *tree, action_t *action)
 {
   /*
