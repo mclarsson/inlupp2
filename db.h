@@ -4,14 +4,11 @@
 #include "list.h"
 #include "tree.h"
 
-typedef struct shelf shelf_t;
-
-typedef struct item item_t;
-
 typedef struct action action_t;
 
 action_t *action_new();
 
+/* TODO: har kvar dessa så länge men misstänker att de kan vara privata
 /// Creates new shelf
 ///
 /// \param name Name of shelf (shelf format expected)
@@ -32,14 +29,18 @@ item_t *make_item(char *description, int price);
 /// \param name Name of shelf
 /// \param amount Amount of item on shelf
 void add_shelf(item_t *item, char *name, int amount);
+*/
 
+/// Creates new items
+///
+/// \param tree tree to add to
+/// \param action to keep track of what's added
 void add_goods(tree_t *tree, action_t *action);
 
-//char *select_goods(tree_t *tree)
-
+/// Presents list of items in tree
+///
+/// \param tree tree to be displayed
 void list_goods(tree_t *tree);
-
-// void edit_goods(tree_t *tree)
 
 void edit_goods(tree_t *tree, action_t *action);
 

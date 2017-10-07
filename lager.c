@@ -15,30 +15,6 @@ void exit_program()
   exit(0);
 }
 
-
-// Helper function for adding stuff to catalog
-void populate_catalog(tree_t *catalog, int size)
-{ 
-  for (int i = 0; i < size; i++)
-    {
-      // Generate random key
-      int name_length = 10;
-      char name[name_length];
-      for (int i = 0; i < name_length; ++i)
-	{
-	  name[i] = 'A' + rand() % 15;
-	}
-      name[name_length] = '\0';
-      
-      item_t *item = make_item("desc", 12);
-      char *shelfname = calloc(4, sizeof(char));
-      sprintf(shelfname, "%s%d", "A", i);
-      add_shelf(item, shelfname, i);
-      tree_insert(catalog, name, item);
-    }
-}
-
-
 /// Prints outmain  menu
 ///
 void print_main_menu()

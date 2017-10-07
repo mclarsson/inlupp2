@@ -14,6 +14,13 @@
 // Types
 //
 
+
+typedef struct shelf shelf_t;
+
+typedef struct item item_t;
+
+typedef struct goods goods_t;
+
 struct item {
   char *description;
   int price;
@@ -27,8 +34,8 @@ struct shelf {
 
 struct goods
 {
-  item_t item;
-  shelf_t shelf;
+  char *name;
+  item_t *item;
 };
 
 struct action
@@ -40,6 +47,7 @@ struct action
     struct { item_t *edited; item_t original; }; // EDIT
   };
 };
+
 
 /// Creates new action tracker
 ///
@@ -150,13 +158,13 @@ void print_item(char *name, item_t *item)
 {
   printf("\nNamn:\t\t%s \n", name);
   printf("Beskrivning:\t%s \n", item->description);
-  printf("Pris:\t\t%d \n", item->price);
+  printf("Pris:\t\t%d.%d \n", item->price / 100, item->price % 100);
 
   int shelves_length = list_length(item->shelves);
   for (int i = 0; i < shelves_length; ++i)
     {
       shelf_t *s = (shelf_t *) list_get(item->shelves, i);
-      printf("Hylla:\t\t%s \n", s->name);
+      printf("\nHylla:\t\t%s \n", s->name);
       printf("Antal:\t\t%d \n\n", s->amount);
     }
 }
@@ -191,11 +199,7 @@ bool shelf_exists(tree_t *tree, char *name)
   return false;
 }
 
-/// Asks for input and creates shelf
-///
-/// \param tree the tree where the shelf is created in
-/// \returns: new shelf
-shelf_t *input_shelf(tree_t *tree)
+char *unique_shelf(tree_t *tree)
 {
   bool exists = true;
   do {
@@ -207,12 +211,22 @@ shelf_t *input_shelf(tree_t *tree)
       }
     else
       {
-	int amount = ask_question_int("Antal:");
-	return make_shelf(name, amount);
+	return strdup(name);
       }
   } while (exists);
 
   return NULL;
+}
+
+/// Asks for input and creates shelf
+///
+/// \param tree the tree where the shelf is created in
+/// \returns: new shelf
+shelf_t *input_shelf(tree_t *tree)
+{
+  char *name = unique_shelf(tree);
+  int amount = ask_question_int("Antal:");
+  return make_shelf(name, amount);
 }
 
 /// Asks for inputs and creates item
@@ -311,10 +325,11 @@ void add_goods(tree_t *tree, action_t *action)
   } while (!(abort || save));
 }
 
-/// Outputs entire catalog in list format.
+/// Presents list of items and returns chosen item along with name
 ///
-/// \param tree Tree containing catalog.
-void list_goods(tree_t *tree)
+/// \param tree tree to display
+/// \returns chosen item
+goods_t select_goods(tree_t *tree)
 {
   int size = tree_size(tree);
   K *items = tree_keys(tree);
@@ -339,7 +354,7 @@ void list_goods(tree_t *tree)
 	  printf("%d.\t%s\n", k, items[index]);
 	}
 
-      char *input = ask_menu_option("\nSe vara [1-20], [n]ästa sida eller [a]vbryt");
+      char *input = ask_menu_option("\nVälj vara [1-20], [n]ästa sida eller [a]vbryt");
 	
       if (is_number(input))
 	{
@@ -349,8 +364,9 @@ void list_goods(tree_t *tree)
 	  int item_index  = (input_index - 1) + (current_page - 1) * page_size;
 	  item_t *item = tree_get(tree, items[item_index]);
 
-	  print_item(items[item_index], item);
-	      
+	  //print_item(items[item_index], item);
+	  return (goods_t) { .name = strdup(items[item_index]), .item = item };
+	  
 	  // Repeat page
 	  index -= max;
 	}
@@ -362,7 +378,29 @@ void list_goods(tree_t *tree)
 	{
 	  ++current_page;
 	}
-    } 
+    }
+
+  return (goods_t) { .name = NULL, .item = NULL };
+}
+
+/// Presents list of items in tree
+///
+/// \param tree tree to be displayed
+void list_goods(tree_t *tree)
+{
+  bool stop = false;
+  do {
+    goods_t selected = select_goods(tree);
+    
+    if (selected.name != NULL && selected.item != NULL)
+      {
+	print_item(selected.name, selected.item);
+      }
+    else
+      {
+	stop = true;
+      }
+  } while (!stop);
 }
 
 /// Edits parameters of current items
@@ -370,18 +408,21 @@ void list_goods(tree_t *tree)
 /// \param tree the tree containing the items
 /// \param action what to do in case of an undo call
 void edit_goods(tree_t *tree, action_t *action)
-{
-  /*
-  char *name = select_goods(tree);
-  item_t *tmp_item = tree_get(tree, name);
-  list_t *shelves = tmp_item->shelves;
+{ 
+  goods_t goods = select_goods(tree);
+
+  if (goods.name == NULL && goods.item == NULL)
+    {
+      return;
+    }
+  
+  list_t *shelves = goods.item->shelves;
 
   // Copy item for undo
-
   action->type = EDIT;
-  action->edited = tmp_item;
-  action->original.description = strdup(tmp_item->description);
-  action->original.price = tmp_item->price;
+  action->edited = goods.item;
+  action->original.description = strdup(goods.item->description);
+  action->original.price = goods.item->price;
 
   // Clear copys shelves
   while (list_remove(action->original.shelves, 0, NULL));
@@ -390,9 +431,61 @@ void edit_goods(tree_t *tree, action_t *action)
   int shelves_length = list_length(shelves);
   for (int i = 0; i < shelves_length; i++)
     {
-      shelf_t *tmp = list_get(shelves, i);
+      shelf_t *tmp = (shelf_t *) list_get(shelves, i);
       list_append(action->original.shelves, make_shelf(tmp->name, tmp->amount)); 
     }
-  */
+
+  puts("\n[B]eskrivning");
+  puts("[P]ris");
+  puts("[L]agerhylla");
+  puts("An[t]al\n");
+
+  char input = ask_question_char_in_str("Välj rad eller [a]vbryt", "BPLTA");
+
+  switch (input)
+    {
+    case 'B':
+      printf("\nNuvarande beskrivning: %s \n", goods.item->description);
+      puts("----------------------");
+      goods.item->description = ask_question_string("Ny beskrivning: ");
+      break;
+      
+    case 'P':
+      printf("\nNuvarande pris: %d.%d \n", goods.item->price / 100, goods.item->price % 100);
+      puts("---------------");
+      goods.item->price = ask_question_int("Nytt pris: ");
+      break;
+      
+    case 'L':
+      for (int i = 0; i < shelves_length; ++i)
+	{
+	  shelf_t *tmp = (shelf_t *) list_get(shelves, i);
+	  
+	  printf("\nNuvarande hylla: %s \n", tmp->name);
+	  puts("----------------");
+	  tmp->name = ask_question_shelf("Ny hylla: ");
+
+	  printf("\nNuvarande antal: %d \n", tmp->amount);
+	  puts("----------------");
+	  tmp->amount = ask_question_int("Nytt antal: ");
+	}
+      break;
+      
+    case 'T':
+      for (int i = 0; i < shelves_length; ++i)
+	{
+	  shelf_t *tmp = (shelf_t *) list_get(shelves, i);
+
+	  printf("\nNuvarande hylla, antal: %s, %d \n", tmp->name, tmp->amount);
+	  puts("----------------");
+	  tmp->amount = ask_question_int("Nytt antal: ");
+	}
+      break;
+      
+    case 'A':
+    default:
+      return;
+      break;
+    }
 }
 
