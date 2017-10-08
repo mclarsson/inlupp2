@@ -9,13 +9,15 @@
 #include "list.h"
 #include "db.h"
 
+/// Exists program
+///
 void exit_program()
 {
   puts("Avslutar program");
   exit(0);
 }
 
-/// Prints outmain  menu
+/// Prints out main  menu
 ///
 void print_main_menu()
 {
@@ -29,14 +31,14 @@ void print_main_menu()
   fputs("\n", stdout);
 }
 
+/// Main program
+///
 int event_loop()
 {
   tree_t *catalog = tree_new();
   action_t *act = action_new();
-
-  // populate_catalog(catalog, 50);
   
-  puts("\n\n Välkommen till lagerhantering 1.0");
+  puts("\n\n Välkommen till lagerhantering");
   puts(" ================================= \n");
   
   char input;
@@ -44,7 +46,7 @@ int event_loop()
   while (true)
     {
       print_main_menu();
-      input = toupper(ask_question_char(" > "));
+      input = ask_question_char_in_str(" > ", "LHTRGA");
 
       switch (input)
 	{
