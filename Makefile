@@ -27,6 +27,10 @@ db.o:	db.c db.h
 utils.o: utils.c utils.h
 	 $(FLAGS) utils.c -c
 
+# kolla efter minnesläckage
+valgrind: lager
+	@valgrind --leak-check=yes ./lager
+
 # Rensa
 clean:
 	rm -f lager
