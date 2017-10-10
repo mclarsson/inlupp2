@@ -13,6 +13,7 @@ typedef struct node node_t;
 struct tree {
   node_t *top;
   cmp_t *cmp_f;
+  bool balanced;
   int size;
 };
 
@@ -58,6 +59,7 @@ tree_t *tree_new(cmp_t *cmp)
   if (new)
     {
       new->cmp_f = cmp;
+      new->balanced = true;
     }
 
   return new;
@@ -121,7 +123,11 @@ int max(int a, int b)
 /// \returns depth of tree
 int count_depth(node_t *node)
 {
-  if (node->left == NULL && node->right == NULL)
+  if (node == NULL)
+    {
+      return 0;
+    }
+  else if (node->left == NULL && node->right == NULL)
     {
       return 1;
     }
@@ -186,7 +192,6 @@ node_t **search_tree(tree_t *tree, element_t key)
 
 	default:
 	  // Something's broken
-	  return NULL;
 	  break;
 	}
     }
@@ -242,6 +247,142 @@ void tree_apply(tree_t *tree, enum tree_order order, tree_action2 fun, void *dat
   traverse_tree(tree->top, order, fun, data);
 }
 
+/// Determine if a tree is balanced
+///
+/// \param tree tree to check
+/// \return true if tree is balanced, otherwise false
+bool check_balanced(tree_t *tree)
+{
+  int left_depth = count_depth(tree->top->left);
+  int right_depth = count_depth(tree->top->right);
+  int balance_factor = abs(left_depth - right_depth);
+  return balance_factor < 2;
+}
+
+/// Check if a tree has been flagged as balanced
+///
+/// \param tree tree to check
+/// \return true if tree is balanced, otherwise false
+bool is_balanced(tree_t *tree)
+{
+  return tree->balanced;
+}
+ 
+/// Rotates nodes according to AVL right rotation
+///
+/// \param A top node
+/// \returns new top node
+node_t *avl_rotate_left(node_t *A)
+{
+  node_t *B = A->right;
+  node_t *B_left = B->left;
+
+  B->left = A;
+  A->right = B_left;
+  
+  return B;
+}
+
+/// Rotates nodes according to AVL right rotation
+///
+/// \param C top node
+/// \returns new top node
+node_t *avl_rotate_right(node_t *C)
+{
+  node_t *B = C->left;
+  node_t *B_right = B->right;
+
+  B->right = C;
+  C->left = B_right;
+  
+  return B;
+}
+
+/// Rotates nodes according to AVL left-right rotation
+///
+/// \param C top node
+/// \returns new top node
+node_t *avl_rotate_left_right(node_t *C)
+{
+  node_t *B = C->left;
+  node_t *A = B->right;
+
+  node_t *B_left = B->left;
+
+  B->left = A;
+  C->left = B;
+  A->right = B_left;
+  
+  return avl_rotate_right(B);
+}
+
+/// Rotates nodes according to AVL right-left rotation
+///
+/// \param C top node
+/// \returns new top node
+node_t *avl_rotate_right_left(node_t *A)
+{
+  node_t *C = A->right;
+  node_t *B = C->left;
+
+  node_t *B_right = B->right;
+
+  B->right = C;
+  A->right = B;
+  C->left = B_right;
+  
+  return avl_rotate_left(B);
+}
+
+/// Balances subtree
+///
+/// \param tree tree that is being balanced
+/// \param node top node of current subtree
+/// \returns top node in balanced subtree
+node_t *balance_subtree(tree_t *tree, node_t *node)
+{ 
+  // Balance subtrees
+  if (node->left) node->left = balance_subtree(tree, node->left);
+  if (node->right) node->right = balance_subtree(tree, node->right);
+
+  // No need to continue balancing if tree is balanced
+  if (is_balanced(tree)) return node;
+
+  int left_depth = count_depth(node->left);
+  int right_depth = count_depth(node->right);
+  int balance_factor = left_depth - right_depth;
+
+  // Child node to return
+  node_t *child = node;
+  
+  if (balance_factor < -1)
+    {
+      if (count_depth(node->right->left) > count_depth(node->right->right))
+	{
+	  child = avl_rotate_right_left(node);
+	}
+      else 
+	{
+	  child = avl_rotate_left(node);
+	}
+    }
+  else if (balance_factor > 1)
+    {
+      if (count_depth(node->left->right) > count_depth(node->left->left))
+	{
+	  child = avl_rotate_left_right(node);
+	}
+      else
+	{
+	  child = avl_rotate_right(node);
+	}
+    }
+
+  tree->balanced = check_balanced(tree);
+  
+  return child;
+}
+
 /// Balances a tree.
 ///
 /// \param tree tree to be balanced
@@ -249,20 +390,17 @@ void tree_apply(tree_t *tree, enum tree_order order, tree_action2 fun, void *dat
 bool balance_tree(tree_t *tree)
 {
   node_t *top = tree->top;
-
-  int left_depth = count_depth(top->left);
-  int right_depth = count_depth(top->right);
-  int balance_factor = abs(left_depth - right_depth);
-
-  // Check if tree is already balanced or not big enough
-  if (balance_factor < 2 || (left_depth < 2 && right_depth < 2))
+  
+  if (check_balanced(tree))
     {
       // No need to rebalance
       return true;
     }
   else
     {
-      
+      tree->balanced = false;
+      tree->top = balance_subtree(tree, top);
+      return true;
     }
 
   return false;
@@ -374,46 +512,4 @@ element_t *tree_keys(tree_t *tree)
     }
   
   return keys;
-}
-
-
-/*
-
-  TESTING
-
-*/
-
-int cmp_ex(element_t a, element_t b)
-{
-  /* char *sa = a.p; */
-  /* char *sb = b.p; */
-  /* return strcmp(sa, sb); */
-
-  return a.i - b.i;
-}
-
-int main(int argc, char *argv[])
-{
-
-  int test_size = 20;
-  
-  cmp_t c = cmp_ex;
-  tree_t *tree = tree_new(&c);
-
-  // Add stuff
-  for (int i = 0; i < test_size; ++i)
-    {
-      tree_insert(tree, (element_t) i, (element_t) i);
-      printf("DEPTH \t %d \t SIZE \t %d \n", tree_depth(tree), tree_size(tree));
-    }
-
-  puts("");
-  
-  // Get stuff
-  for (int i = 0; i < test_size; ++i)
-    {
-      printf("GET \t %d\n", tree_get(tree, (element_t) i).i );
-    }
-  
-  return 0;
 }
