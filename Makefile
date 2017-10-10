@@ -4,34 +4,27 @@
 #             lägga in dom här för att göra allt i en veva. Allt man nu behöver skriva är make.
 
 # Variabler
-FLAGS = gcc -Wall -Werror
+FLAGS = gcc -Wall -Werror -ggdb
 
 # Skapa allt, bara lager så länge
+#.SILENT:
 all: lager
 
 # Programmet sparas i lager
 lager: lager.c tree.o list.o db.o utils.o
-	$(FLAGS) lager.c tree.o list.o db.o utils.o -o lager
+	$(FLAGS) $? -o $@
 
 # Skapa .o filer
 
-tree.o: tree.c tree.h
-	$(FLAGS) tree.c -c
-
-list.o: list.c list.h
-	$(FLAGS) list.c -c
-
-db.o:	db.c db.h
-	$(FLAGS) db.c -c
-
-utils.o: utils.c utils.h
-	 $(FLAGS) utils.c -c
+.c.o:
+	$(FLAGS) $< -c
 
 # kolla efter minnesläckage
 valgrind: lager
 	@valgrind --leak-check=yes ./lager
 
 # Rensa
+.PHONY: clean
 clean:
 	rm -f lager
 	rm *.o

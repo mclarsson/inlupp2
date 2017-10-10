@@ -1,3 +1,5 @@
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,35 +9,58 @@
 
 typedef struct node node_t;
 
+/// Struct for tree
 struct tree {
   node_t *top;
+  cmp_t *cmp_f;
   int size;
 };
 
+
+/// Types of keys and elements
+union element
+{
+  void *p;
+  int   i;
+  uint  u;
+  float f;
+};
+
+/// Node struct
 struct node {
-  K key;
-  T element;
+  element_t key;
+  element_t element;
   node_t *left;
   node_t *right;
 };
 
+/// Enum for simplifying result of key compares
 enum key_compare { KEYS_MATCH, MOVE_RIGHT, MOVE_LEFT };
 
+/// Struct for keeping track of collection of nodes
 typedef struct {
   int index;
   enum { KEYS, ELEMENTS } type;
   union {
-    K *keys;
-    T *elements;
+    element_t *keys;
+    element_t *elements;
   };
 } node_clt;
 
 /// Creates a new tree
 ///
+/// \param cmp compare function for keys
 /// \returns: empty tree
-tree_t *tree_new()
+tree_t *tree_new(cmp_t *cmp)
 {
-  return calloc(1, sizeof(tree_t));
+  tree_t *new = calloc(1, sizeof(tree_t));
+
+  if (new)
+    {
+      new->cmp_f = cmp;
+    }
+
+  return new;
 }
 
 /// Frees node and subtrees
@@ -120,12 +145,13 @@ int tree_depth(tree_t *tree)
 /// Returns which direction to move in tree
 /// based on parent and child key
 ///
+/// \param tree associated tree with compare function
 /// \param node key of node
 /// \param key key to compare with
 /// \returns direction to move in
-enum key_compare compare_keys(K node, K key)
+enum key_compare compare_keys(tree_t *tree, element_t node_key, element_t cmp_key)
 {
-  int a = strcmp(node, key);
+  int a = (*tree->cmp_f)(node_key, cmp_key);
 
   if (a == 0)     return KEYS_MATCH;
   else if (a < 0) return MOVE_RIGHT;
@@ -138,17 +164,31 @@ enum key_compare compare_keys(K node, K key)
 /// \param tree tree to search in
 /// \param key key to search tree for
 /// \returns double pointer to correct position
-node_t **search_tree(tree_t *tree, K key)
+node_t **search_tree(tree_t *tree, element_t key)
 {
   node_t **node = &(tree->top);
   
   while (*node != NULL)
     {
-      int compare_result = compare_keys((*node)->key, key);
-	
-      if      (compare_result == KEYS_MATCH) return node;
-      else if (compare_result == MOVE_LEFT)  node = &(*node)->left;
-      else if (compare_result == MOVE_RIGHT) node = &(*node)->right;
+      switch(compare_keys(tree, (*node)->key, key))
+	{
+	case KEYS_MATCH:
+	  return node;
+	  break;
+
+	case MOVE_LEFT:
+	  node = &(*node)->left;
+	  break;
+
+	case MOVE_RIGHT:
+	  node = &(*node)->right;
+	  break;
+
+	default:
+	  // Something's broken
+	  return NULL;
+	  break;
+	}
     }
 
   // Reached end of branch, key not in tree
@@ -202,16 +242,42 @@ void tree_apply(tree_t *tree, enum tree_order order, tree_action2 fun, void *dat
   traverse_tree(tree->top, order, fun, data);
 }
 
+/// Balances a tree.
+///
+/// \param tree tree to be balanced
+/// \returns if balancing was succesful
+bool balance_tree(tree_t *tree)
+{
+  node_t *top = tree->top;
+
+  int left_depth = count_depth(top->left);
+  int right_depth = count_depth(top->right);
+  int balance_factor = abs(left_depth - right_depth);
+
+  // Check if tree is already balanced or not big enough
+  if (balance_factor < 2 || (left_depth < 2 && right_depth < 2))
+    {
+      // No need to rebalance
+      return true;
+    }
+  else
+    {
+      
+    }
+
+  return false;
+}
+
 /// Insert element into the tree. Returns false if the key is already used.
 ///
 /// \param tree pointer to the tree
 /// \param key the key of element to be appended
 /// \param elem the element 
 /// \returns: true if successful, else false
-bool tree_insert(tree_t *tree, K key, T elem)
+bool tree_insert(tree_t *tree, element_t key, element_t elem)
 {
   node_t *new = calloc(1, sizeof(node_t));
-  new->key = strdup(key);
+  new->key = key;
   new->element = elem;
 
   node_t **leaf = search_tree(tree, key);
@@ -220,7 +286,7 @@ bool tree_insert(tree_t *tree, K key, T elem)
     {
       *leaf = new;
       ++tree->size;
-      return true;
+      return balance_tree(tree);
     }
   else
     {
@@ -233,7 +299,7 @@ bool tree_insert(tree_t *tree, K key, T elem)
 /// \param tree pointer to the tree
 /// \param key the key of elem to be removed
 /// \returns: true if key is a key in tree
-bool tree_has_key(tree_t *tree, K key)
+bool tree_has_key(tree_t *tree, element_t key)
 {
   return *(search_tree(tree, key)) != NULL;
 }
@@ -244,7 +310,7 @@ bool tree_has_key(tree_t *tree, K key)
 /// \param tree pointer to the tree
 /// \param key the key of elem to be removed
 /// \returns: true if key is a key in tree
-T tree_get(tree_t *tree, K key)
+element_t tree_get(tree_t *tree, element_t key)
 {
   return (*search_tree(tree, key))->element;
 }
@@ -255,7 +321,7 @@ T tree_get(tree_t *tree, K key)
 /// \param key key of node
 /// \param elem element of node
 /// \param data node_clt to add to
-void collect_nodes(K key, T elem, void *data)
+void collect_nodes(element_t key, element_t elem, void *data)
 {
   node_clt *clt = data;
   
@@ -277,10 +343,10 @@ void collect_nodes(K key, T elem, void *data)
 ///
 /// \param tree pointer to the tree
 /// \returns: array of tree_size() elements
-T *tree_elements(tree_t *tree)
+element_t *tree_elements(tree_t *tree)
 {
   int size = tree_size(tree);
-  T *elements = calloc(size, sizeof(T));
+  element_t *elements = calloc(size, sizeof(element_t));
   node_clt clt = { .index = 0, .type = ELEMENTS, .elements = elements };
     
   if (size > 0)
@@ -296,10 +362,10 @@ T *tree_elements(tree_t *tree)
 ///
 /// \param tree pointer to the tree
 /// \returns: array of tree_size() keys
-K *tree_keys(tree_t *tree)
+element_t *tree_keys(tree_t *tree)
 {
   int size = tree_size(tree);
-  K *keys = calloc(size, sizeof(K));
+  element_t *keys = calloc(size, sizeof(element_t));
   node_clt clt = { .index = 0, .type = KEYS, .keys = keys };
   
   if (size > 0)
@@ -310,3 +376,44 @@ K *tree_keys(tree_t *tree)
   return keys;
 }
 
+
+/*
+
+  TESTING
+
+*/
+
+int cmp_ex(element_t a, element_t b)
+{
+  /* char *sa = a.p; */
+  /* char *sb = b.p; */
+  /* return strcmp(sa, sb); */
+
+  return a.i - b.i;
+}
+
+int main(int argc, char *argv[])
+{
+
+  int test_size = 20;
+  
+  cmp_t c = cmp_ex;
+  tree_t *tree = tree_new(&c);
+
+  // Add stuff
+  for (int i = 0; i < test_size; ++i)
+    {
+      tree_insert(tree, (element_t) i, (element_t) i);
+      printf("DEPTH \t %d \t SIZE \t %d \n", tree_depth(tree), tree_size(tree));
+    }
+
+  puts("");
+  
+  // Get stuff
+  for (int i = 0; i < test_size; ++i)
+    {
+      printf("GET \t %d\n", tree_get(tree, (element_t) i).i );
+    }
+  
+  return 0;
+}
