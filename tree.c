@@ -82,6 +82,7 @@ void free_branches(node_t *node, tree_action cleanup)
     }
 
   cleanup(node->key, node->element);
+  free(node);
 }
 
 /// Remove a tree along with all T elements.
@@ -193,6 +194,7 @@ node_t **search_tree(tree_t *tree, element_t key)
 
 	default:
 	  // Something's broken
+	  assert(false);
 	  break;
 	}
     }
@@ -266,6 +268,7 @@ bool check_balanced(tree_t *tree)
 /// \return true if tree is balanced, otherwise false
 bool is_balanced(tree_t *tree)
 {
+  assert(tree);
   return tree->balanced;
 }
  
@@ -410,13 +413,16 @@ bool balance_tree(tree_t *tree)
 }
 
 /// Insert element into the tree. Returns false if the key is already used.
+/// Balances tree after insert.
 ///
 /// \param tree pointer to the tree
 /// \param key the key of element to be appended
 /// \param elem the element 
 /// \returns: true if successful, else false
 bool tree_insert(tree_t *tree, element_t key, element_t elem)
-{ 
+{
+  if (tree == NULL) return false;
+  
   node_t *new = calloc(1, sizeof(node_t));
   new->key = key;
   new->element = elem;
@@ -427,7 +433,9 @@ bool tree_insert(tree_t *tree, element_t key, element_t elem)
     {
       *leaf = new;
       ++tree->size;
-      return balance_tree(tree);
+      balance_tree(tree);
+      assert(check_balanced(tree));
+      return true;
     }
   else
     {
@@ -442,6 +450,7 @@ bool tree_insert(tree_t *tree, element_t key, element_t elem)
 /// \returns: true if key is a key in tree
 bool tree_has_key(tree_t *tree, element_t key)
 {
+  assert(tree);
   return *(search_tree(tree, key)) != NULL;
 }
 
@@ -453,6 +462,7 @@ bool tree_has_key(tree_t *tree, element_t key)
 /// \returns: true if key is a key in tree
 element_t tree_get(tree_t *tree, element_t key)
 {
+  assert(tree);
   return (*search_tree(tree, key))->element;
 }
 
@@ -486,6 +496,7 @@ void collect_nodes(element_t key, element_t elem, void *data)
 /// \returns: array of tree_size() elements
 element_t *tree_elements(tree_t *tree)
 {
+  assert(tree);
   int size = tree_size(tree);
   element_t *elements = calloc(size, sizeof(element_t));
   node_clt clt = { .index = 0, .type = ELEMENTS, .elements = elements };
@@ -505,6 +516,7 @@ element_t *tree_elements(tree_t *tree)
 /// \returns: array of tree_size() keys
 element_t *tree_keys(tree_t *tree)
 {
+  assert(tree)
   int size = tree_size(tree);
   element_t *keys = calloc(size, sizeof(element_t));
   node_clt clt = { .index = 0, .type = KEYS, .keys = keys };
@@ -516,3 +528,4 @@ element_t *tree_keys(tree_t *tree)
   
   return keys;
 }
+

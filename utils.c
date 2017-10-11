@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include "utils.h"
 
 /**
@@ -89,6 +90,8 @@ void clear_input_buffer()
  */
 int read_string(char *buf, int buf_siz)
 {
+  assert(buf_siz > 0);
+  
   int i = 0;
   int max = buf_siz - 1;
   int c;
