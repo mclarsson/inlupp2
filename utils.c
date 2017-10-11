@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include "utils.h"
 
 /**
@@ -29,9 +30,9 @@ bool is_float(char *str)
   
   for (int i = 1; i < len; i++)
     {
-      if (str[i] == '.')
+      if (str[i] == '.' && !hasPoint)
         {
-          // All floats have a .
+          // All floats have one .
           hasPoint = true;
         }
       else if (!isdigit(str[i]))
@@ -89,6 +90,8 @@ void clear_input_buffer()
  */
 int read_string(char *buf, int buf_siz)
 {
+  assert(buf_siz > 0);
+  
   int i = 0;
   int max = buf_siz - 1;
   int c;
@@ -356,4 +359,103 @@ char *ask_menu_option(char *menu)
   } while(!passed || length == 0);
 
   return strdup(str);
+}
+
+/// Prints out string in specific format: title, colon, tab, content, new line
+/// [title]:    [content]
+///
+/// \param title string before colon
+/// \param content string after colon
+void output(char *title, char *content)
+{
+  
+  char *format = ":\t\t%s\n";
+  int title_length = strlen(title);
+  int format_length = strlen(format);
+  
+  char string[title_length + format_length + 1];
+
+  int i = 0;
+  while (title[i] != '\0')
+    {
+      string[i] = title[i];
+      i++;
+    }
+
+  int j = 0;
+  while (format[j] != '\0')
+    {
+      string[i] = format[j];
+      i++;
+      j++;
+    }
+
+  string[i] = '\0';
+  fprintf(stdout, string, content);
+}
+
+/// Converts int to string
+///
+/// \param number int to convert
+/// \returns int as string
+char *int_to_str(int number)
+{  
+  // Check how many digits in number
+  int a = number;
+  int length = 0;
+  while (a != 0)
+    {
+      a = (a % 10) / 10;
+      length++;
+    }
+  
+  char str[length];
+  sprintf(str, "%d", number);
+  return strdup(str);
+}
+
+
+/// Prints out int in specific format: title, colon, tab, content, new line
+/// [title]:    [content]
+///
+/// \param title string before colon
+/// \param content int after colon
+void output_int(char *title, int number)
+{
+  output(title, int_to_str(number));
+}
+
+/// Prints out price in kr.
+///
+/// \param title title of output
+/// \param price price in ören
+void output_price(char *title, int price)
+{
+  char *a = int_to_str(price / 100);
+  char *b = int_to_str(price % 100);
+  
+  int a_length = strlen(a);
+  int price_length = a_length + strlen(b) + 1;
+  char price_str[price_length + 1];
+
+  for (int i = 0; i < price_length; ++i)
+    {
+      if (i < a_length)
+	{
+	  price_str[i] = a[i];
+	}
+      else if (i == a_length)
+	{
+	  price_str[i] = '.';
+	}
+      else
+	{
+	  puts("b");
+	  price_str[i] = b[i - a_length - 1];
+	}
+    }
+
+  price_str[price_length] = '\0';
+
+  output(title, price_str);
 }
