@@ -32,12 +32,29 @@ double ask_question_float(char *question);
 char *ask_question_shelf(char *question);
 char ask_question_char(char *question);
 char ask_question_char_in_str(char *question, char *str);
-void print_menu();
 char ask_question_menu();
-void print_edit_menu();
-char ask_question_edit_menu();
-char ask_question_add();
 
 char *ask_menu_option(char *question);
+
+
+/// Prints out string in specific format: title, colon, tab, content, new line
+/// [title]:    [content]
+///
+/// \param title string before colon
+/// \param content string after colon
+void output(char *title, char *content);
+
+/// Prints out int in specific format: title, colon, tab, content, new line
+/// [title]:    [content]
+///
+/// \param title string before colon
+/// \param content int after colon
+void output_int(char *title, int number);
+
+/// Prints out price in kr.
+///
+/// \param title title of output
+/// \param price price in ören
+void output_price(char *title, int price);
 
 #endif

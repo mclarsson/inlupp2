@@ -156,16 +156,16 @@ bool is(char *s1, char *s2)
 /// \param item item which details are printed out
 void print_item(char *name, item_t *item)
 {
-  printf("\nNamn:\t\t%s \n", name);
-  printf("Beskrivning:\t%s \n", item->description);
-  printf("Pris:\t\t%d.%d \n", item->price / 100, item->price % 100);
+  output("Namn", name);
+  output("Beskrivning", item->description);
+  output_price("Pris", item->price)
 
   int shelves_length = list_length(item->shelves);
   for (int i = 0; i < shelves_length; ++i)
     {
       shelf_t *s = (shelf_t *) list_get(item->shelves, i);
-      printf("\nHylla:\t\t%s \n", s->name);
-      printf("Antal:\t\t%d \n\n", s->amount);
+      output("Hylla", s->name);
+      output_int("Antal", s->amount);
     }
 }
 
@@ -445,13 +445,13 @@ void edit_goods(tree_t *tree, action_t *action)
   switch (input)
     {
     case 'B':
-      printf("\nNuvarande beskrivning: %s \n", goods.item->description);
+      output("Nuvarande beskrivning", goods.item->description);
       puts("----------------------");
       goods.item->description = ask_question_string("Ny beskrivning: ");
       break;
       
     case 'P':
-      printf("\nNuvarande pris: %d.%d \n", goods.item->price / 100, goods.item->price % 100);
+      output_price("Nuvarande pris", goods.item->price);
       puts("---------------");
       goods.item->price = ask_question_int("Nytt pris: ");
       break;
@@ -461,11 +461,11 @@ void edit_goods(tree_t *tree, action_t *action)
 	{
 	  shelf_t *tmp = (shelf_t *) list_get(shelves, i);
 	  
-	  printf("\nNuvarande hylla: %s \n", tmp->name);
+	  output("Nuvarande hylla", tmp->name);
 	  puts("----------------");
 	  tmp->name = ask_question_shelf("Ny hylla: ");
 
-	  printf("\nNuvarande antal: %d \n", tmp->amount);
+	  output_int("Nuvarande antal", tmp->amount);
 	  puts("----------------");
 	  tmp->amount = ask_question_int("Nytt antal: ");
 	}
@@ -476,7 +476,8 @@ void edit_goods(tree_t *tree, action_t *action)
 	{
 	  shelf_t *tmp = (shelf_t *) list_get(shelves, i);
 
-	  printf("\nNuvarande hylla, antal: %s, %d \n", tmp->name, tmp->amount);
+	  output("Hylla", tmp->name);
+	  output_int("Nuvarande antal", tmp->amount);
 	  puts("----------------");
 	  tmp->amount = ask_question_int("Nytt antal: ");
 	}
