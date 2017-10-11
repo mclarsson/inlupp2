@@ -123,7 +123,9 @@ void undo_action(tree_t *tree, action_t *action)
 	  shelf_t *tmp = (shelf_t*) list_get(action->original.shelves, i);
 	  list_append(action->edited->shelves, tmp); 
 	}
-      
+      for (int i = 0; i < sizeof('N'); i++)
+        {
+      }
       // Remove all saved shelves 
       while (list_remove(action->original.shelves, 0, NULL));
     }
@@ -488,4 +490,3 @@ void edit_goods(tree_t *tree, action_t *action)
       break;
     }
 }
-
