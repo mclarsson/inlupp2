@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #include "tree.h"
 
@@ -357,6 +358,7 @@ node_t *balance_subtree(tree_t *tree, node_t *node)
   
   if (balance_factor < -1)
     {
+      // Too many  nodes in right subtree
       if (count_depth(node->right->left) > count_depth(node->right->right))
 	{
 	  child = avl_rotate_right_left(node);
@@ -368,6 +370,7 @@ node_t *balance_subtree(tree_t *tree, node_t *node)
     }
   else if (balance_factor > 1)
     {
+      // Too many nodes in left subtree
       if (count_depth(node->left->right) > count_depth(node->left->left))
 	{
 	  child = avl_rotate_left_right(node);
@@ -413,7 +416,7 @@ bool balance_tree(tree_t *tree)
 /// \param elem the element 
 /// \returns: true if successful, else false
 bool tree_insert(tree_t *tree, element_t key, element_t elem)
-{
+{ 
   node_t *new = calloc(1, sizeof(node_t));
   new->key = key;
   new->element = elem;

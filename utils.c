@@ -29,9 +29,9 @@ bool is_float(char *str)
   
   for (int i = 1; i < len; i++)
     {
-      if (str[i] == '.')
+      if (str[i] == '.' && !hasPoint)
         {
-          // All floats have a .
+          // All floats have one .
           hasPoint = true;
         }
       else if (!isdigit(str[i]))
