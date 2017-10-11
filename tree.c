@@ -516,7 +516,7 @@ element_t *tree_elements(tree_t *tree)
 /// \returns: array of tree_size() keys
 element_t *tree_keys(tree_t *tree)
 {
-  assert(tree)
+  assert(tree);
   int size = tree_size(tree);
   element_t *keys = calloc(size, sizeof(element_t));
   node_clt clt = { .index = 0, .type = KEYS, .keys = keys };
