@@ -43,13 +43,13 @@ list_t *list_new(cmp_t *cmp_f);
 ///
 /// \param list pointer to the list
 /// \param elem the element to be appended
-void list_append(list_t *list, element_t *elem);
+void list_append(list_t *list, element_t elem);
 
 /// Inserts a new element at the beginning of the list
 ///
 /// \param list pointer to the list
 /// \param elem the element to be prepended
-void list_prepend(list_t *list, element_t *elem);
+void list_prepend(list_t *list, element_t elem);
 
 /// Inserts a new element at a given index. 
 ///
@@ -78,7 +78,7 @@ void list_prepend(list_t *list, element_t *elem);
 /// \param index the index for elem to be inserted at
 /// \param elem  the element to be inserted
 /// \returns true if succeeded, else false
-void list_insert(list_t *list, element_t *elem);
+void list_insert(list_t *list, element_t elem);
 
 /// Removes an element from a list.
 ///
@@ -92,19 +92,19 @@ void list_insert(list_t *list, element_t *elem);
 /// \param index the index to be removed
 /// \param elem a pointer to where the element can be stored
 /// \returns true if succeeded, else false
-bool list_remove(list_t *list, int index, element_t *elem);
+bool list_remove(list_t *list, int index, element_t elem);
 
 /// Returns the element at a given index
 /// \param list  pointer to the list
 /// \param index the index to be returned
 /// \returns a pointer to the element at index index
-element_t *list_get(list_t *list, int index);
+element_t list_get(list_t *list, int index);
 
 /// A convenience for list_get(list, 0)
-element_t *list_first(list_t *list);
+element_t list_first(list_t *list);
 
 /// A convenience for list_get(list, -1)
-element_t *list_last(list_t *list);
+element_t list_last(list_t *list);
 
 /// Returns the length of the list. It is undefined
 /// whether the length is calculated in O(n) time or

@@ -14,6 +14,7 @@
 // Types
 //
 
+typedef union element element_t;
 
 typedef struct shelf shelf_t;
 
@@ -21,15 +22,23 @@ typedef struct item item_t;
 
 typedef struct goods goods_t;
 
+union element
+{
+  void *p;
+  int   i;
+  uint  u;
+  float f;
+};
+
 struct item {
   char *description;
-  int price;
+  element_t price;
   list_t *shelves;
 };
 
 struct shelf {
   char *name;
-  int amount;
+  element_t amount;
 };
 
 struct goods
@@ -49,13 +58,22 @@ struct action
 };
 
 
+int cmp_ex(element_t e1, element_t e2)
+{
+  return e1.i < e2.i ? -1 : e1.i == e2.i ? 0 : 1;
+}
+
+
+
 /// Creates new action tracker
 ///
 /// \returns: new action
 action_t *action_new()
 {
+  cmp_t cmp_f = cmp_ex;
+  
   action_t *new = calloc(1, sizeof(action_t));
-  new->original.shelves = list_new();
+  new->original.shelves = list_new(&cmp_f);
   new->type = NOTHING;
   return new;
 }
@@ -65,7 +83,7 @@ action_t *action_new()
 /// \param name Name of shelf (shelf format expected)
 /// \param amount Amount of items on shelf
 /// \returns: pointer to shelf
-shelf_t *make_shelf(char *name, int amount)
+shelf_t *make_shelf(char *name, element_t amount)
 {
   shelf_t *new = calloc(1, sizeof(shelf_t));
   new->name = calloc(4, sizeof(char));
@@ -80,12 +98,13 @@ shelf_t *make_shelf(char *name, int amount)
 /// \param description Description of item.
 /// \param price Price of item.
 /// \returns: pointer to item.
-item_t *make_item(char *description, int price)
+item_t *make_item(char *description, element_t price)
 {
+  cmp_t cmp_f = &cmp_ex;
   item_t *new = calloc(1, sizeof(item_t));
   new->description = strdup(description);
   new->price = price;
-  new->shelves = list_new();
+  new->shelves = list_new(&cmp_f);
   return new;
 }
 
@@ -94,10 +113,11 @@ item_t *make_item(char *description, int price)
 /// \param item Item to add to
 /// \param name Name of shelf
 /// \param amount Amount of item on shelf
-void add_shelf(item_t *item, char *name, int amount)
+void add_shelf(item_t *item, char *name, element_t amount)
 {
   shelf_t *new = make_shelf(name, amount);
-  list_append(item->shelves, new);
+  element_t tmp = new->amount;
+  list_append(item->shelves, tmp);
 }
 
 /// Undos latest action, for the moment only edits
@@ -112,22 +132,24 @@ void undo_action(tree_t *tree, action_t *action)
       action->edited->description = strdup(action->original.description);
       action->edited->price = action->original.price;
 
-      // Remove all current shelves 
-      while (list_remove(action->edited->shelves, 0, NULL));
+      // Remove all current shelves
+      element_t null = { .p = NULL };
+      while (list_remove(action->edited->shelves, 0, null));
       
       int shelves_length = list_length(action->original.shelves);
 
       // Add saved shelves
       for (int i = 0; i < shelves_length; ++i)
 	{
-	  shelf_t *tmp = (shelf_t*) list_get(action->original.shelves, i);
-	  list_append(action->edited->shelves, tmp); 
+	  shelf_t *tmpshelf = (shelf_t*) list_get(action->original.shelves, i).p;
+          element_t tmpamount = tmpshelf->amount;
+	  list_append(action->edited->shelves, tmpamount); 
 	}
       for (int i = 0; i < sizeof('N'); i++)
         {
       }
-      // Remove all saved shelves 
-      while (list_remove(action->original.shelves, 0, NULL));
+      // Remove all saved shelves
+      while (list_remove(action->original.shelves, 0, null));
     }
   else if (action->type == ADD)
     {
@@ -135,10 +157,10 @@ void undo_action(tree_t *tree, action_t *action)
     }
   else if (action->type == NOTHING)
     {
-      puts("Inget att ångra");
+      puts("Finns inget att ångra!");
     }
   
-  // Prevents multiple regrets
+  // Förhindrar multipla ångranden
   action->type = NOTHING;
 }
 
@@ -160,14 +182,14 @@ void print_item(char *name, item_t *item)
 {
   output("Namn", name);
   output("Beskrivning", item->description);
-  output_price("Pris", item->price)
+  output_price("Pris", (item->price).i);
 
   int shelves_length = list_length(item->shelves);
   for (int i = 0; i < shelves_length; ++i)
     {
-      shelf_t *s = (shelf_t *) list_get(item->shelves, i);
+      shelf_t *s = (shelf_t *) list_get(item->shelves, i).p;
       output("Hylla", s->name);
-      output_int("Antal", s->amount);
+      output_int("Antal", (s->amount).i);
     }
 }
 
@@ -178,18 +200,20 @@ void print_item(char *name, item_t *item)
 /// \returns: true if shelf is already in use, else false
 bool shelf_exists(tree_t *tree, char *name)
 {
-  L *items = tree_elements(tree);
+  element_t *items = tree_elements(tree);
   int size = tree_size(tree);
   
   for (int i = 0; i < size; ++i)
     {
-      item_t *item = items[i];
+      item_t *item = items[i].p;
       list_t *shelves =  item->shelves;
       int shelf_length = list_length(shelves);
       
       for (int j = 0; j < shelf_length; ++j)
 	{
-	  shelf_t *shelf = (shelf_t *) list_get(shelves, j);
+	  element_t tmpshelf =  list_get(shelves, j);
+          shelf_t *shelf = (shelf_t*) tmpshelf.p;
+          
 
 	  if (strcmp(name, shelf->name) == 0)
 	    {
@@ -228,7 +252,8 @@ shelf_t *input_shelf(tree_t *tree)
 {
   char *name = unique_shelf(tree);
   int amount = ask_question_int("Antal:");
-  return make_shelf(name, amount);
+  element_t tmpamount = { .i = amount };
+  return make_shelf(name, tmpamount);
 }
 
 /// Asks for inputs and creates item
@@ -239,9 +264,11 @@ item_t *input_item(tree_t *tree)
 {
   char *description = ask_question_string("Beskrivning:");
   int price = ask_question_int("Pris:");
-  item_t *item = make_item(description, price);
+  element_t tmpprice = { .i = price };
+  item_t *item = make_item(description, tmpprice);
   shelf_t *shelf = input_shelf(tree);
-  list_append(item->shelves, shelf);
+  element_t tmpshelf = { .p = shelf };
+  list_append(item->shelves, tmpshelf);
   return item;
 }
 
@@ -257,12 +284,15 @@ void add_goods(tree_t *tree, action_t *action)
   // Get inputs until aborted or saved
   do {
     char *name = ask_question_string("Namn:");
+    element_t tmpname = { .p = name };
     
-    if (tree_has_key(tree, name))
+    if (tree_has_key(tree, tmpname))
       {
 	puts("Varan finns redan, lägger till ny hylla");
 	
-	item_t *item = tree_get(tree, name);
+	element_t elem =  tree_get(tree, tmpname);
+        item_t *item = (item_t*) elem.p;
+        
 
 	// Ask for shelfname until it's either new or if it already belongs to item
 	do {
@@ -272,8 +302,10 @@ void add_goods(tree_t *tree, action_t *action)
 	    { 
 	      // Add new shelf
 	      int amount = ask_question_int("Antal:");
-	      shelf_t *new_shelf = make_shelf(shelf_name, amount);
-	      list_append(item->shelves, new_shelf);
+              element_t tmpamount = { .i = amount };
+	      shelf_t *new_shelf = make_shelf(shelf_name, tmpamount);
+              element_t tmpshelf = { .p = new_shelf };
+	      list_append(item->shelves, tmpshelf);
 	      save = true;
 	    }
 	  else
@@ -282,11 +314,11 @@ void add_goods(tree_t *tree, action_t *action)
 	      int shelf_length = list_length(item->shelves);
 	      for (int i = 0; i < shelf_length; ++i)
 		{
-		  shelf_t *tmp = (shelf_t *) list_get(item->shelves, i);
+		  shelf_t *tmp = (shelf_t *) list_get(item->shelves, i).p;
 		  if (strcmp(shelf_name, tmp->name) == 0)
 		    {
 		      // Aggregate shelf amount
-		      tmp->amount += ask_question_int("Lägg till antal:");
+		      tmp->amount.i += ask_question_int("Lägg till antal:");
 		      save = true;
 		      break;
 		    }
@@ -305,6 +337,7 @@ void add_goods(tree_t *tree, action_t *action)
 
 	// Create item from inputs
 	item_t *item = input_item(tree);
+        element_t tmpitem = { .p = item };
 
 	// Confirm item
 	print_item(name, item);
@@ -313,12 +346,13 @@ void add_goods(tree_t *tree, action_t *action)
 
 	if (input == 'J')
 	  {
-	    tree_insert(tree, name, item);
+	    tree_insert(tree, tmpname, tmpitem);
 	    save = true;
 	  }
 	else if (input == 'N')
 	  {
-	    list_remove(item->shelves, 0, NULL);
+            element_t null = { .p = NULL };
+	    list_remove(item->shelves, 0, null);
 	    free(item->shelves);
 	    free(item);
 	    abort = true;
@@ -334,7 +368,7 @@ void add_goods(tree_t *tree, action_t *action)
 goods_t select_goods(tree_t *tree)
 {
   int size = tree_size(tree);
-  K *items = tree_keys(tree);
+  element_t *items = tree_keys(tree);
   int page_size = 20;
   
   // Current index for iteration through items
@@ -353,7 +387,7 @@ goods_t select_goods(tree_t *tree)
       
       for (int k = 1; k <= max; ++k, ++index)
 	{
-	  printf("%d.\t%s\n", k, items[index]);
+	  printf("%d.\t%s\n", k, (char *)items[index].p);
 	}
 
       char *input = ask_menu_option("\nVälj vara [1-20], [n]ästa sida eller [a]vbryt");
@@ -364,10 +398,10 @@ goods_t select_goods(tree_t *tree)
 	  int input_index = atoi(input);
 	    
 	  int item_index  = (input_index - 1) + (current_page - 1) * page_size;
-	  item_t *item = tree_get(tree, items[item_index]);
+	  item_t *item = tree_get(tree, items[item_index]).p;
 
 	  //print_item(items[item_index], item);
-	  return (goods_t) { .name = strdup(items[item_index]), .item = item };
+	  return (goods_t) { .name = strdup(items[item_index].p), .item = item };
 	  
 	  // Repeat page
 	  index -= max;
@@ -400,6 +434,7 @@ void list_goods(tree_t *tree)
       }
     else
       {
+        puts("Finns inget att visa!");
 	stop = true;
       }
   } while (!stop);
@@ -415,6 +450,7 @@ void edit_goods(tree_t *tree, action_t *action)
 
   if (goods.name == NULL && goods.item == NULL)
     {
+      puts("Finns inget att redigera!");
       return;
     }
   
@@ -427,14 +463,16 @@ void edit_goods(tree_t *tree, action_t *action)
   action->original.price = goods.item->price;
 
   // Clear copys shelves
-  while (list_remove(action->original.shelves, 0, NULL));
+  element_t null = { .p = NULL };
+  while (list_remove(action->original.shelves, 0, null));
 
   // Copy shelves
   int shelves_length = list_length(shelves);
   for (int i = 0; i < shelves_length; i++)
     {
-      shelf_t *tmp = (shelf_t *) list_get(shelves, i);
-      list_append(action->original.shelves, make_shelf(tmp->name, tmp->amount)); 
+      shelf_t *tmp = (shelf_t *) list_get(shelves, i).p;
+      element_t tmpshelf = { .p = make_shelf(tmp->name, tmp->amount) };
+      list_append(action->original.shelves, tmpshelf); 
     }
 
   puts("\n[B]eskrivning");
@@ -453,35 +491,35 @@ void edit_goods(tree_t *tree, action_t *action)
       break;
       
     case 'P':
-      output_price("Nuvarande pris", goods.item->price);
+      output_price("Nuvarande pris", goods.item->price.i);
       puts("---------------");
-      goods.item->price = ask_question_int("Nytt pris: ");
+      goods.item->price.i = ask_question_int("Nytt pris: ");
       break;
       
     case 'L':
       for (int i = 0; i < shelves_length; ++i)
 	{
-	  shelf_t *tmp = (shelf_t *) list_get(shelves, i);
+	  shelf_t *tmp = (shelf_t *) list_get(shelves, i).p;
 	  
 	  output("Nuvarande hylla", tmp->name);
 	  puts("----------------");
 	  tmp->name = ask_question_shelf("Ny hylla: ");
 
-	  output_int("Nuvarande antal", tmp->amount);
+	  output_int("Nuvarande antal", tmp->amount.i);
 	  puts("----------------");
-	  tmp->amount = ask_question_int("Nytt antal: ");
+	  tmp->amount.i = ask_question_int("Nytt antal: ");
 	}
       break;
       
     case 'T':
       for (int i = 0; i < shelves_length; ++i)
 	{
-	  shelf_t *tmp = (shelf_t *) list_get(shelves, i);
+	  shelf_t *tmp = (shelf_t *) list_get(shelves, i).p;
 
 	  output("Hylla", tmp->name);
-	  output_int("Nuvarande antal", tmp->amount);
+	  output_int("Nuvarande antal", tmp->amount.i);
 	  puts("----------------");
-	  tmp->amount = ask_question_int("Nytt antal: ");
+	  tmp->amount.i = ask_question_int("Nytt antal: ");
 	}
       break;
       

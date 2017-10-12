@@ -27,7 +27,7 @@ union element
 /// Struct for link-content
 struct link
 {
-  element_t *value;
+  element_t value;
   link_t *next;
   //cmp_t *cmp_f;
 };
@@ -52,7 +52,7 @@ list_t *list_new(cmp_t *cmp)
 /// \param value of new element
 /// \param next next link in line
 /// \returns: link, part of a list
-link_t *link_new(element_t *value, link_t *next)
+link_t *link_new(element_t value, link_t *next)
 {
   link_t *new = calloc(1, sizeof(link_t));
 
@@ -71,7 +71,7 @@ link_t *link_new(element_t *value, link_t *next)
 ///
 /// \param list list which is appended upon
 /// \param elem element that is added to the list
-void list_append(list_t *list, element_t *elem)
+void list_append(list_t *list, element_t elem)
 {
   link_t *new = link_new(elem, NULL);
   if (list->first == NULL)
@@ -93,7 +93,7 @@ void list_append(list_t *list, element_t *elem)
 ///
 /// \param list list which is prepended upon
 /// \param elem element that is added to the list
-void list_prepend(list_t *list, element_t *elem)
+void list_prepend(list_t *list, element_t elem)
 {
   list->first = link_new(elem, list->first);
   if (list->last == NULL)
@@ -109,7 +109,7 @@ void list_prepend(list_t *list, element_t *elem)
 /// \param list list that is searched for value
 /// \param index indicator for which element to return
 /// \returns: pointer to whatever value is stored at index
-element_t *list_get(list_t *list, int index)
+element_t list_get(list_t *list, int index)
 {
   link_t *cursor = list->first;
   for (int i = 0; cursor->next != NULL && i < index; i++)
@@ -171,10 +171,10 @@ element_t *list_get(list_t *list, int index)
 }
 */
 
-void list_insert(list_t *l, element_t *elem)
+void list_insert(list_t *l, element_t elem)
 {
   link_t **c = &(l->first);
-  while (*c && (*l->cmp_f)(*(*c)->value, *elem))
+  while (*c && (*l->cmp_f)((*c)->value, elem))
     {
       c = &((*c)->next);
     }
@@ -208,7 +208,7 @@ int list_length(list_t *list)
 /// \param index point of the list indicating the element
 /// \param elem element to be removed
 /// \returns: true if successful, else false
-bool list_remove(list_t *list, int index, element_t *elem)
+bool list_remove(list_t *list, int index, element_t elem)
 {
   // Link to remove
   link_t *remove = list->first;
@@ -246,7 +246,7 @@ bool list_remove(list_t *list, int index, element_t *elem)
       prev->next = remove->next;
     }
   
-  if (elem != NULL) elem = remove->value;
+  if (elem.p != NULL) elem = remove->value;
   
   free(remove);
   return true;
@@ -263,7 +263,7 @@ void list_delete(list_t *list, list_action cleanup)
     {
       link_t *tmp = cursor;
       cursor = tmp->next;
-      cleanup(*tmp->value);
+      cleanup(tmp->value);
       free(tmp);
     }
   
@@ -275,7 +275,7 @@ void list_delete(list_t *list, list_action cleanup)
 ///
 /// \param list the list
 /// \returns: pointer to the first value in list
-element_t *list_first(list_t *list)
+element_t list_first(list_t *list)
 {
   return list->first->value;
 }
@@ -286,7 +286,7 @@ element_t *list_first(list_t *list)
 ///
 /// \param list the list
 /// \returns: pointer to the last value in list
-element_t *list_last(list_t *list)
+element_t list_last(list_t *list)
 {
   return list->last->value;
 }
@@ -296,7 +296,7 @@ void cleanup(element_t elem)
   elem.i = 0;
 }
 
-
+/*
 int cmp_ex(element_t e1, element_t e2)
 {
   return e1.i < e2.i ? -1 : e1.i == e2.i ? 0 : 1;
@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
   cmp_t cmp = &cmp_ex;
   list_t *new = list_new(&cmp);
   //int length = 100;
-  /*for (int index = 0; index < length; ++index)
+  for (int index = 0; index < length; ++index)
     {
       //printf("Link: %d\n", i);
       //int a = index;
@@ -318,17 +318,17 @@ int main(int argc, char *argv[])
       
       list_insert(new, &((element_t) { .i = index }));
     }
-  */
-  list_insert(new, &((element_t) { .i = 1 }));
-  list_insert(new, &((element_t) { .i = 2 }));
-  list_insert(new, &((element_t) { .i = 3 }));
-  list_insert(new, &((element_t) { .i = 4 }));
+  
+  list_insert(new, ((element_t) { .i = 1 }));
+  list_insert(new, ((element_t) { .i = 2 }));
+  list_insert(new, ((element_t) { .i = 3 }));
+  list_insert(new, ((element_t) { .i = 4 }));
   
   for (int index = 0; index < 4; ++index)
     {
-      element_t *asd = list_get(new, index);
-      int asd2 = asd->i;
-      printf("List_get link: %d\n", asd2);
+      element_t asd = list_get(new, index);
+      //int asd2 = asd.i;
+      printf("List_get link: %d\n", asd.i);
     }
   
   
@@ -336,3 +336,4 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+*/

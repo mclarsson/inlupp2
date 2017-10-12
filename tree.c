@@ -159,6 +159,12 @@ int tree_depth(tree_t *tree)
 /// \returns direction to move in
 enum key_compare compare_keys(tree_t *tree, element_t node_key, element_t cmp_key)
 {
+  if (node_key.p == NULL || cmp_key.p == NULL)
+    {
+      puts("ERROR!");
+      exit(1);
+    }
+  
   int a = (*tree->cmp_f)(node_key, cmp_key);
 
   if (a == 0)     return KEYS_MATCH;
@@ -426,6 +432,8 @@ bool tree_insert(tree_t *tree, element_t key, element_t elem)
   node_t *new = calloc(1, sizeof(node_t));
   new->key = key;
   new->element = elem;
+  printf("\nDebug-key:  %d\n", key.i);
+  printf("Debug-elem: %s\n", (char*)elem.p);
 
   node_t **leaf = search_tree(tree, key);
 
@@ -516,7 +524,7 @@ element_t *tree_elements(tree_t *tree)
 /// \returns: array of tree_size() keys
 element_t *tree_keys(tree_t *tree)
 {
-  assert(tree)
+  assert(tree);
   int size = tree_size(tree);
   element_t *keys = calloc(size, sizeof(element_t));
   node_clt clt = { .index = 0, .type = KEYS, .keys = keys };

@@ -12,7 +12,7 @@
 /// Exists program
 ///
 void exit_program()
-{
+{  
   puts("Avslutar program");
   exit(0);
 }
