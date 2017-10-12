@@ -2,16 +2,19 @@
 #define __tree_h__
 
 #include <stdbool.h>
+#include <stdlib.h>
 
-/// Change this definition and replace int with the appropriate type
-/// in your program. Note, however, that your implementation of tree.c
-/// should treat T as if it did not know the type.
-// typedef void * T;
-/// For now, let an element's key be string 
-// typedef char * K;
-
-///
+/// Type for keys and elements
 typedef union element element_t;
+
+/// Types of keys and elements
+union element
+{
+  void *p;
+  int   i;
+  uint  u;
+  float f;
+};
 
 /// Define struct tree in your .c file not here! (why?)
 typedef struct tree tree_t;

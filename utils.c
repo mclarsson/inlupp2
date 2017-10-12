@@ -369,7 +369,7 @@ char *ask_menu_option(char *menu)
 void output(char *title, char *content)
 {
   
-  char *format = ":\t\t%s\n";
+  char *format = ":\t%s\n";
   int title_length = strlen(title);
   int format_length = strlen(format);
   

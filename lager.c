@@ -31,11 +31,22 @@ void print_main_menu()
   fputs("\n", stdout);
 }
 
+/// Compare function for two strings
+int cmp_goods_names(element_t e1, element_t e2)
+{
+  char *a = (char *) e1.p;
+  char *b = (char *) e2.p;
+  return strcmp(a, b);
+}
+
 /// Main program
 ///
 int event_loop()
 {
-  tree_t *catalog = tree_new();
+  cmp_t *cmp = calloc(1, sizeof(cmp_t));
+  *cmp = &cmp_goods_names;
+  
+  tree_t *catalog = tree_new(cmp);
   action_t *act = action_new();
   
   puts("\n\n Välkommen till lagerhantering");
@@ -78,6 +89,7 @@ int event_loop()
 	         	  
 	case 'A':
 	  // Exit
+	  free(cmp);
 	  exit_program();
 	  break;
 

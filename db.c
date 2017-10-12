@@ -14,21 +14,11 @@
 // Types
 //
 
-typedef union element element_t;
-
 typedef struct shelf shelf_t;
 
 typedef struct item item_t;
 
 typedef struct goods goods_t;
-
-union element
-{
-  void *p;
-  int   i;
-  uint  u;
-  float f;
-};
 
 struct item {
   char *description;
@@ -145,9 +135,7 @@ void undo_action(tree_t *tree, action_t *action)
           element_t tmpamount = tmpshelf->amount;
 	  list_append(action->edited->shelves, tmpamount); 
 	}
-      for (int i = 0; i < sizeof('N'); i++)
-        {
-      }
+      
       // Remove all saved shelves
       while (list_remove(action->original.shelves, 0, null));
     }
@@ -280,6 +268,8 @@ void add_goods(tree_t *tree, action_t *action)
 { 
   bool abort = false;
   bool save = false;
+
+  action->type = ADD;
 
   // Get inputs until aborted or saved
   do {

@@ -19,15 +19,6 @@ struct tree {
 };
 
 
-/// Types of keys and elements
-union element
-{
-  void *p;
-  int   i;
-  uint  u;
-  float f;
-};
-
 /// Node struct
 struct node {
   element_t key;
@@ -57,6 +48,7 @@ tree_t *tree_new(cmp_t *cmp)
 {
   tree_t *new = calloc(1, sizeof(tree_t));
 
+  assert(cmp);
   if (new)
     {
       new->cmp_f = cmp;
@@ -159,11 +151,8 @@ int tree_depth(tree_t *tree)
 /// \returns direction to move in
 enum key_compare compare_keys(tree_t *tree, element_t node_key, element_t cmp_key)
 {
-  if (node_key.p == NULL || cmp_key.p == NULL)
-    {
-      puts("ERROR!");
-      exit(1);
-    }
+  puts((char *) node_key.p);
+  puts((char *) cmp_key.p); 
   
   int a = (*tree->cmp_f)(node_key, cmp_key);
 
@@ -274,7 +263,6 @@ bool check_balanced(tree_t *tree)
 /// \return true if tree is balanced, otherwise false
 bool is_balanced(tree_t *tree)
 {
-  assert(tree);
   return tree->balanced;
 }
  
@@ -432,8 +420,8 @@ bool tree_insert(tree_t *tree, element_t key, element_t elem)
   node_t *new = calloc(1, sizeof(node_t));
   new->key = key;
   new->element = elem;
-  printf("\nDebug-key:  %d\n", key.i);
-  printf("Debug-elem: %s\n", (char*)elem.p);
+  printf("\nDebug-key:  %s\n", (char *) key.p);
+  //printf("Debug-elem: %s\n", (char*)elem.p);
 
   node_t **leaf = search_tree(tree, key);
 
@@ -458,7 +446,6 @@ bool tree_insert(tree_t *tree, element_t key, element_t elem)
 /// \returns: true if key is a key in tree
 bool tree_has_key(tree_t *tree, element_t key)
 {
-  assert(tree);
   return *(search_tree(tree, key)) != NULL;
 }
 
@@ -470,7 +457,6 @@ bool tree_has_key(tree_t *tree, element_t key)
 /// \returns: true if key is a key in tree
 element_t tree_get(tree_t *tree, element_t key)
 {
-  assert(tree);
   return (*search_tree(tree, key))->element;
 }
 
