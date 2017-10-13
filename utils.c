@@ -450,12 +450,10 @@ void output_price(char *title, int price)
 	}
       else
 	{
-	  puts("b");
 	  price_str[i] = b[i - a_length - 1];
 	}
     }
 
   price_str[price_length] = '\0';
-
   output(title, price_str);
 }

@@ -13,7 +13,7 @@ typedef struct node node_t;
 /// Struct for tree
 struct tree {
   node_t *top;
-  cmp_t *cmp_f;
+  tree_cmp_t *cmp_f;
   bool balanced;
   int size;
 };
@@ -21,8 +21,8 @@ struct tree {
 
 /// Node struct
 struct node {
-  element_t key;
-  element_t element;
+  tree_key_t key;
+  tree_value_t value;
   node_t *left;
   node_t *right;
 };
@@ -33,10 +33,10 @@ enum key_compare { KEYS_MATCH, MOVE_RIGHT, MOVE_LEFT };
 /// Struct for keeping track of collection of nodes
 typedef struct {
   int index;
-  enum { KEYS, ELEMENTS } type;
+  enum { KEYS, VALUES } type;
   union {
-    element_t *keys;
-    element_t *elements;
+    tree_key_t *keys;
+    tree_value_t *values;
   };
 } node_clt;
 
@@ -44,12 +44,11 @@ typedef struct {
 ///
 /// \param cmp compare function for keys
 /// \returns: empty tree
-tree_t *tree_new(cmp_t *cmp)
+tree_t *tree_new(tree_cmp_t *cmp)
 {
   tree_t *new = calloc(1, sizeof(tree_t));
 
-  assert(cmp);
-  if (new)
+  if (new && cmp)
     {
       new->cmp_f = cmp;
       new->balanced = true;
@@ -73,7 +72,7 @@ void free_branches(node_t *node, tree_action cleanup)
       free_branches(node->right, cleanup);
     }
 
-  cleanup(node->key, node->element);
+  cleanup(node->key, node->value);
   free(node);
 }
 
@@ -149,11 +148,8 @@ int tree_depth(tree_t *tree)
 /// \param node key of node
 /// \param key key to compare with
 /// \returns direction to move in
-enum key_compare compare_keys(tree_t *tree, element_t node_key, element_t cmp_key)
-{
-  puts((char *) node_key.p);
-  puts((char *) cmp_key.p); 
-  
+enum key_compare compare_keys(tree_t *tree, tree_key_t node_key, tree_key_t cmp_key)
+{  
   int a = (*tree->cmp_f)(node_key, cmp_key);
 
   if (a == 0)     return KEYS_MATCH;
@@ -167,7 +163,7 @@ enum key_compare compare_keys(tree_t *tree, element_t node_key, element_t cmp_ke
 /// \param tree tree to search in
 /// \param key key to search tree for
 /// \returns double pointer to correct position
-node_t **search_tree(tree_t *tree, element_t key)
+node_t **search_tree(tree_t *tree, tree_key_t key)
 {
   node_t **node = &(tree->top);
   
@@ -209,19 +205,19 @@ void traverse_tree(node_t *node, enum tree_order order, tree_action2 fun, void *
   if (node != NULL)
     {
       // PRE ORDER: handle node before both branches
-      if (order == preorder) fun(node->key, node->element, data);
+      if (order == preorder) fun(node->key, node->value, data);
 
       // traverse left branch
       traverse_tree(node->left, order, fun, data);
 
       // IN ORDER: handle node between left and right branches
-      if (order == inorder) fun(node->key, node->element, data);
+      if (order == inorder) fun(node->key, node->value, data);
 
       // traverse right branch
       traverse_tree(node->right, order, fun, data);
 
       // POST ORDER: handle node after both branches
-      if (order == postorder) fun(node->key, node->element, data);
+      if (order == postorder) fun(node->key, node->value, data);
     }
 }
 
@@ -413,15 +409,13 @@ bool balance_tree(tree_t *tree)
 /// \param key the key of element to be appended
 /// \param elem the element 
 /// \returns: true if successful, else false
-bool tree_insert(tree_t *tree, element_t key, element_t elem)
+bool tree_insert(tree_t *tree, tree_key_t key, tree_value_t value)
 {
   if (tree == NULL) return false;
   
   node_t *new = calloc(1, sizeof(node_t));
   new->key = key;
-  new->element = elem;
-  printf("\nDebug-key:  %s\n", (char *) key.p);
-  //printf("Debug-elem: %s\n", (char*)elem.p);
+  new->value = value;
 
   node_t **leaf = search_tree(tree, key);
 
@@ -444,7 +438,7 @@ bool tree_insert(tree_t *tree, element_t key, element_t elem)
 /// \param tree pointer to the tree
 /// \param key the key of elem to be removed
 /// \returns: true if key is a key in tree
-bool tree_has_key(tree_t *tree, element_t key)
+bool tree_has_key(tree_t *tree, tree_key_t key)
 {
   return *(search_tree(tree, key)) != NULL;
 }
@@ -455,9 +449,9 @@ bool tree_has_key(tree_t *tree, element_t key)
 /// \param tree pointer to the tree
 /// \param key the key of elem to be removed
 /// \returns: true if key is a key in tree
-element_t tree_get(tree_t *tree, element_t key)
+tree_value_t tree_get(tree_t *tree, tree_key_t key)
 {
-  return (*search_tree(tree, key))->element;
+  return (*search_tree(tree, key))->value;
 }
 
 /// Adds key or elem to node_clt, tree_action2 for tree_elements
@@ -466,7 +460,7 @@ element_t tree_get(tree_t *tree, element_t key)
 /// \param key key of node
 /// \param elem element of node
 /// \param data node_clt to add to
-void collect_nodes(element_t key, element_t elem, void *data)
+void collect_nodes(tree_key_t key, tree_value_t value, void *data)
 {
   node_clt *clt = data;
   
@@ -476,7 +470,7 @@ void collect_nodes(element_t key, element_t elem, void *data)
     }
   else
     {
-      clt->elements[clt->index] = elem;
+      clt->values[clt->index] = value;
     }
 
   clt->index++;
@@ -488,19 +482,19 @@ void collect_nodes(element_t key, element_t elem, void *data)
 ///
 /// \param tree pointer to the tree
 /// \returns: array of tree_size() elements
-element_t *tree_elements(tree_t *tree)
+tree_value_t *tree_values(tree_t *tree)
 {
   assert(tree);
   int size = tree_size(tree);
-  element_t *elements = calloc(size, sizeof(element_t));
-  node_clt clt = { .index = 0, .type = ELEMENTS, .elements = elements };
+  tree_value_t *values = calloc(size, sizeof(tree_value_t));
+  node_clt clt = { .index = 0, .type = VALUES, .values = values };
     
   if (size > 0)
     {
       tree_apply(tree, inorder, collect_nodes, &clt);
     }
   
-  return elements;
+  return values;
 }
 
 /// Returns an array holding all the keys in the tree
@@ -508,11 +502,11 @@ element_t *tree_elements(tree_t *tree)
 ///
 /// \param tree pointer to the tree
 /// \returns: array of tree_size() keys
-element_t *tree_keys(tree_t *tree)
+tree_key_t *tree_keys(tree_t *tree)
 {
   assert(tree);
   int size = tree_size(tree);
-  element_t *keys = calloc(size, sizeof(element_t));
+  tree_key_t *keys = calloc(size, sizeof(tree_key_t));
   node_clt clt = { .index = 0, .type = KEYS, .keys = keys };
   
   if (size > 0)

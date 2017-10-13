@@ -10,6 +10,11 @@ FLAGS = gcc -Wall -Werror -ggdb
 #.SILENT:
 all: lager
 
+# Rensar och kompilerar om
+.PHONY: new
+new: clean lager
+	./lager
+
 # Programmet sparas i lager
 lager: lager.c tree.o list.o db.o utils.o
 	$(FLAGS) $? -o $@

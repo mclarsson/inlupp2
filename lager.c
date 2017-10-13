@@ -32,7 +32,7 @@ void print_main_menu()
 }
 
 /// Compare function for two strings
-int cmp_goods_names(element_t e1, element_t e2)
+int cmp_goods_names(tree_key_t e1, tree_key_t e2)
 {
   char *a = (char *) e1.p;
   char *b = (char *) e2.p;
@@ -43,7 +43,7 @@ int cmp_goods_names(element_t e1, element_t e2)
 ///
 int event_loop()
 {
-  cmp_t *cmp = calloc(1, sizeof(cmp_t));
+  tree_cmp_t *cmp = calloc(1, sizeof(tree_cmp_t));
   *cmp = &cmp_goods_names;
   
   tree_t *catalog = tree_new(cmp);

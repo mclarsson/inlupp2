@@ -5,10 +5,11 @@
 #include <stdlib.h>
 
 /// Type for keys and elements
-typedef union element element_t;
+typedef union tree_value tree_key_t;
+typedef union tree_value tree_value_t;
 
 /// Types of keys and elements
-union element
+union tree_value
 {
   void *p;
   int   i;
@@ -21,14 +22,14 @@ typedef struct tree tree_t;
 
 /// This function is used in tree_delete() to allow the trees which are
 /// the sole owners of their data to free the data on delete.
-typedef void(*tree_action)(element_t key, element_t elem);
+typedef void(*tree_action)(tree_key_t key, tree_value_t value);
 
 /// Function for comparing two keys.
 ///
 /// \param a first key
 /// \param b second key
 /// \returns negative if a is before b, 0 if equal, positive if a after b
-typedef int(*cmp_t)(element_t a, element_t b);
+typedef int(*tree_cmp_t)(tree_key_t a, tree_key_t b);
 
 /// \file tree.h
 ///
@@ -48,7 +49,7 @@ typedef int(*cmp_t)(element_t a, element_t b);
 /// Creates a new tree
 ///
 /// \returns: empty tree
-tree_t *tree_new();
+tree_t *tree_new(tree_cmp_t *cmp);
 
 /// Remove a tree along with all T elements.
 ///
@@ -74,14 +75,14 @@ int tree_depth(tree_t *tree);
 /// \param key the key of element to be appended
 /// \param elem the element 
 /// \returns: true if successful, else false
-bool tree_insert(tree_t *tree, element_t key, element_t elem);
+bool tree_insert(tree_t *tree, tree_key_t key, tree_value_t value);
 
 /// Checks whether a key is used in a tree
 ///
 /// \param tree pointer to the tree
 /// \param key the key to check for inclusion in the tree
 /// \returns: true if key is a key in the tree
-bool tree_has_key(tree_t *tree, element_t key);
+bool tree_has_key(tree_t *tree, tree_key_t key);
 
 /// Returns the element for a given key in tree.
 /// (The implementation may assume that the key exists, or reserve
@@ -90,14 +91,14 @@ bool tree_has_key(tree_t *tree, element_t key);
 /// \param tree pointer to the tree
 /// \param key the key of elem to be removed
 /// \returns: the element associated wity key key
-element_t tree_get(tree_t *tree, element_t key);
+tree_value_t tree_get(tree_t *tree, tree_key_t key);
 
 /// This does not need implementation until Assignment 2
 ///
 /// \param tree pointer to the tree
 /// \param key the key of elem to be removed
 /// \returns: the removed element
-element_t tree_remove(tree_t *tree, element_t key);
+tree_value_t tree_remove(tree_t *tree, tree_key_t key);
 
 /// Swap the element for a given key for another.
 ///
@@ -120,7 +121,7 @@ element_t tree_remove(tree_t *tree, element_t key);
 ///
 /// \param tree pointer to the tree
 /// \returns: array of tree_size() keys
-element_t *tree_keys(tree_t *tree);
+tree_value_t *tree_keys(tree_t *tree);
 
 /// Returns an array holding all the elements in the tree
 /// in ascending order of their keys (which are not part
@@ -128,11 +129,11 @@ element_t *tree_keys(tree_t *tree);
 ///
 /// \param tree pointer to the tree
 /// \returns: array of tree_size() elements
-element_t *tree_elements(tree_t *tree);
+tree_value_t *tree_values(tree_t *tree);
 
 /// This function is used in tree_apply() to allow applying a function
 /// to all elements in a tree. 
-typedef void(*tree_action2)(element_t key, element_t elem, void *data);
+typedef void(*tree_action2)(tree_key_t key, tree_value_t value, void *data);
 
 enum tree_order { inorder = 0, preorder = -1, postorder = 1 };
 
