@@ -194,16 +194,17 @@ bool is(char *s1, char *s2)
 void print_item(char *name, item_t *item)
 {
   output("Namn", name);
-  puts(item->description);
   output("Beskr.", item->description);
   output_price("Pris", (item->price));
 
   int shelves_length = list_length(item->shelves);
   for (int i = 0; i < shelves_length; ++i)
     {
+      puts("");
       shelf_t *s = (shelf_t *) list_get(item->shelves, i).p;
       output("Hylla", s->name);
       output_int("Antal", (s->amount));
+
     }
 }
 
@@ -405,7 +406,7 @@ goods_t select_goods(tree_t *tree)
   
   while (size > index && view_next)
     {
-      printf("Sida: %d \n\n", current_page);
+      printf("\nSida: %d \n\n", current_page);
       
       int max;
       if (current_page * page_size > size) max = size - index;
@@ -504,6 +505,8 @@ void edit_goods(tree_t *tree, action_t *action)
       list_value_t tmpshelf = { .p = make_shelf(strdup(tmp->name), tmp->amount) };
       list_append(action->original.shelves, tmpshelf); 
     }
+  // Prints the selected item for the user
+  print_item(goods.name, goods.item);
 
   puts("\n[B]eskrivning");
   puts("[P]ris");
@@ -514,48 +517,58 @@ void edit_goods(tree_t *tree, action_t *action)
 
   switch (input)
     {
+
+      // Edit the description
     case 'B':
       output("Nuvarande beskrivning", goods.item->description);
       puts("----------------------");
       free(goods.item->description);
       goods.item->description = ask_question_string("Ny beskrivning: ");
       break;
-      
+
+
+      // Edit the price
     case 'P':
       output_price("Nuvarande pris", goods.item->price);
       puts("---------------");
       goods.item->price = ask_question_int("Nytt pris: ");
       break;
+
       
+      // Edit the shelf-name
     case 'L':
+      puts("Nuvarande hyllor");
+      puts("----------------");
+      
       for (int i = 0; i < shelves_length; ++i)
 	{
 	  shelf_t *tmp = (shelf_t *) list_get(shelves, i).p;
-	  
-	  output("Nuvarande hylla", tmp->name);
-	  puts("----------------");
-	  free(tmp->name);
-	  tmp->name = ask_question_shelf("Ny hylla: ");
+          printf("%d. Namn:  %s\n", i+1, tmp->name);
+          printf("   Mängd: %d\n\n", tmp->amount);
 
-	  output_int("Nuvarande antal", tmp->amount);
-	  puts("----------------");
-	  tmp->amount = ask_question_int("Nytt antal: ");
-	}
+        }
+      int index_shelf = ask_question_int("Vilken hylla vill du ändra?");
+      shelf_t *tmp_shelf = (shelf_t *) list_get(shelves, index_shelf).p;
+      tmp_shelf->name = ask_question_shelf("Ny hylla: ");
       break;
       
+
+      // Edit the amount  
     case 'T':
       for (int i = 0; i < shelves_length; ++i)
 	{
 	  shelf_t *tmp = (shelf_t *) list_get(shelves, i).p;
-
-	  output("Hylla", tmp->name);
-	  output_int("Nuvarande antal", tmp->amount);
-	  puts("----------------");
-	  tmp->amount = ask_question_int("Nytt antal: ");
-	}
+          printf("%d. Namn:  %s\n", i+1, tmp->name);
+          printf("   Mängd: %d\n\n", tmp->amount);
+          
+        }
+      int index_amount = ask_question_int("Vilket antal vill du ändra?");
+      shelf_t *tmp_amount = (shelf_t *) list_get(shelves, index_amount).p;
+      tmp_amount->amount = ask_question_int("Nytt antal: ");
       break;
       
     case 'A':
+      return;
     default:
       break;
     }
