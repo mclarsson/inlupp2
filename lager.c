@@ -90,6 +90,8 @@ int event_loop()
 	case 'A':
 	  // Exit
 	  free(cmp);
+	  tree_delete(catalog, &free_goods);
+	  free_action(act);
 	  exit_program();
 	  break;
 

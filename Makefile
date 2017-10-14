@@ -25,7 +25,7 @@ lager: lager.c tree.o list.o db.o utils.o
 	$(FLAGS) $< -c
 
 # kolla efter minnesläckage
-valgrind: lager
+valgrind: clean lager
 	@valgrind --leak-check=yes ./lager
 
 # Rensa

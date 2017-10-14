@@ -8,6 +8,12 @@ typedef struct action action_t;
 
 action_t *action_new();
 
+
+/// Frees action_t from memory
+///
+/// \param action action to remove
+void free_action(action_t *action);
+
 /* TODO: har kvar dessa så länge men misstänker att de kan vara privata
 /// Creates new shelf
 ///
@@ -30,6 +36,8 @@ item_t *make_item(char *description, int price);
 /// \param amount Amount of item on shelf
 void add_shelf(item_t *item, char *name, int amount);
 */
+
+void free_goods(tree_key_t key, tree_value_t item);
 
 /// Creates new items
 ///

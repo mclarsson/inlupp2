@@ -238,7 +238,7 @@ bool list_remove(list_t *list, int index, list_value_t elem)
       prev->next = remove->next;
     }
   
-  if (elem.p != NULL) elem = remove->value;
+  elem = remove->value;
   
   free(remove);
   return true;
@@ -248,10 +248,10 @@ bool list_remove(list_t *list, int index, list_value_t elem)
 ///
 /// \param list the list
 /// \param cleanup variable to clear all parts of a link
-void list_delete(list_t *list, list_action cleanup)
+void list_clear(list_t *list, list_action cleanup)
 {
   link_t *cursor = list->first;
-  while (cursor !=NULL)
+  while (cursor != NULL)
     {
       link_t *tmp = cursor;
       cursor = tmp->next;
@@ -259,6 +259,17 @@ void list_delete(list_t *list, list_action cleanup)
       free(tmp);
     }
   
+  list->first = NULL;
+  list->last = NULL;
+}
+
+/// Iterates through a list and frees all the allocated memory bound to it, including itself
+///
+/// \param list the list
+/// \param cleanup variable to clear all parts of a link
+void list_delete(list_t *list, list_action cleanup)
+{
+  list_clear(list, cleanup);
   free(list);
 }
 

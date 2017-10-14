@@ -126,6 +126,13 @@ int list_length(list_t *list);
 /// NOTE: Implementing these functions is NOT mandatory
 ///
 
+
+/// Iterates through a list and frees all the allocated memory bound to it
+///
+/// \param list the list
+/// \param cleanup variable to clear all parts of a link
+void list_clear(list_t *list, list_action cleanup);
+
 /// Deletes a list. 
 ///
 /// \param list pointer to the list

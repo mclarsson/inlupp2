@@ -47,6 +47,22 @@ struct action
   };
 };
 
+void free_shelf(list_value_t value)
+{
+  shelf_t *shelf = value.p;
+  free(shelf->name);
+  free(shelf);
+}
+
+/// Removes item along with all shelves
+void free_goods(tree_key_t key, tree_value_t value)
+{
+  item_t *item = value.p;
+  list_delete(item->shelves, &free_shelf);
+  free(item->description);
+  free(item);
+  free(key.p);
+}
 
 /// Compare function for shelves
 ///
@@ -71,6 +87,16 @@ action_t *action_new()
   return new;
 }
 
+/// Frees action_t from memory
+///
+/// \param action action to remove
+void free_action(action_t *action)
+{
+  list_delete(action->original.shelves, &free_shelf);
+  free(action->original.description);
+  free(action);
+}
+
 /// Creates new shelf
 ///
 /// \param name Name of shelf (shelf format expected)
@@ -79,8 +105,7 @@ action_t *action_new()
 shelf_t *make_shelf(char *name, int amount)
 {
   shelf_t *new = calloc(1, sizeof(shelf_t));
-  new->name = calloc(4, sizeof(char));
-  sprintf(new->name, "%s", name);
+  new->name = name;
   new->amount = amount;
   return new;
 }
@@ -93,7 +118,7 @@ shelf_t *make_shelf(char *name, int amount)
 item_t *make_item(char *description, int price)
 {
   item_t *new = calloc(1, sizeof(item_t));
-  new->description = strdup(description);
+  new->description = description;
   new->price = price;
   new->shelves = list_new((list_cmp_t *) &cmp_shelf_names);
   return new;
@@ -119,25 +144,25 @@ void undo_action(tree_t *tree, action_t *action)
   if (action->type == EDIT)
     {
       // Copy all old attributes
+      free(action->edited->description);
       action->edited->description = strdup(action->original.description);
       action->edited->price = action->original.price;
 
       // Remove all current shelves
-      list_value_t null = { .p = NULL };
-      while (list_remove(action->edited->shelves, 0, null));
+      list_clear(action->edited->shelves, &free_shelf);
       
       int shelves_length = list_length(action->original.shelves);
 
       // Add saved shelves
       for (int i = 0; i < shelves_length; ++i)
 	{
-	  shelf_t *tmpshelf = (shelf_t*) list_get(action->original.shelves, i).p;
-          list_value_t tmpamount = { .p = tmpshelf };
-	  list_append(action->edited->shelves, tmpamount); 
+	  shelf_t *tmp = (shelf_t*) list_get(action->original.shelves, i).p;
+          list_value_t shelf = { .p = make_shelf(strdup(tmp->name), tmp->amount) };
+	  list_append(action->edited->shelves, shelf); 
 	}
       
       // Remove all saved shelves
-      while (list_remove(action->original.shelves, 0, null));
+      list_clear(action->original.shelves, &free_shelf);
     }
   else if (action->type == ADD)
     {
@@ -205,11 +230,13 @@ bool shelf_exists(tree_t *tree, char *name)
 
 	  if (strcmp(name, shelf->name) == 0)
 	    {
+	      free(items);
 	      return true;
 	    }
 	}
     }
 
+  free(items);
   return false;
 }
 
@@ -232,7 +259,7 @@ char *unique_shelf(tree_t *tree)
       }
     else
       {
-	return strdup(name);
+	return name;
       }
     
   } while (exists);
@@ -287,7 +314,7 @@ void add_goods(tree_t *tree, action_t *action)
 	puts("Varan finns redan, lägger till ny hylla");
 	
         item_t *item = (item_t*) tree_get(tree, key).p;
-        
+	free(key.p);
 
 	// Ask for shelfname until it's either new or if it already belongs to item
 	do {
@@ -374,6 +401,7 @@ goods_t select_goods(tree_t *tree)
   int index = 0;
   int current_page = 1;
   bool view_next = true;
+  char *input;
   
   while (size > index && view_next)
     {
@@ -389,7 +417,7 @@ goods_t select_goods(tree_t *tree)
 	  printf("%d.\t%s\n", k, (char *)items[index].p);
 	}
 
-      char *input = ask_menu_option("\nVälj vara [1-20], [n]ästa sida eller [a]vbryt");
+      input = ask_menu_option("\nVälj vara [1-20], [n]ästa sida eller [a]vbryt");
 	
       if (is_number(input))
 	{
@@ -399,8 +427,11 @@ goods_t select_goods(tree_t *tree)
 	    
 	  int item_index  = (input_index - 1) + (current_page - 1) * page_size;
 	  item_t *item = tree_get(tree, items[item_index]).p;
-
-	  return (goods_t) { .name = strdup(items[item_index].p), .item = item };
+	  char *name = items[item_index].p;
+	  
+	  free(input);
+	  free(items);
+	  return (goods_t) { .name = name, .item = item };
 	}
       else if (is(input, "A"))
 	{
@@ -411,7 +442,10 @@ goods_t select_goods(tree_t *tree)
 	  ++current_page;
 	}
     }
+  
 
+  free(input);
+  free(items);
   return (goods_t) { .name = NULL, .item = NULL };
 }
 
@@ -455,19 +489,19 @@ void edit_goods(tree_t *tree, action_t *action)
   // Copy item for undo
   action->type = EDIT;
   action->edited = goods.item;
+  free(action->original.description);
   action->original.description = strdup(goods.item->description);
   action->original.price = goods.item->price;
 
   // Clear copys shelves
-  list_value_t null = { .p = NULL };
-  while (list_remove(action->original.shelves, 0, null));
+  list_clear(action->original.shelves, &free_shelf);
 
   // Copy shelves
   int shelves_length = list_length(shelves);
   for (int i = 0; i < shelves_length; i++)
     {
       shelf_t *tmp = (shelf_t *) list_get(shelves, i).p;
-      list_value_t tmpshelf = { .p = make_shelf(tmp->name, tmp->amount) };
+      list_value_t tmpshelf = { .p = make_shelf(strdup(tmp->name), tmp->amount) };
       list_append(action->original.shelves, tmpshelf); 
     }
 
@@ -483,6 +517,7 @@ void edit_goods(tree_t *tree, action_t *action)
     case 'B':
       output("Nuvarande beskrivning", goods.item->description);
       puts("----------------------");
+      free(goods.item->description);
       goods.item->description = ask_question_string("Ny beskrivning: ");
       break;
       
@@ -499,6 +534,7 @@ void edit_goods(tree_t *tree, action_t *action)
 	  
 	  output("Nuvarande hylla", tmp->name);
 	  puts("----------------");
+	  free(tmp->name);
 	  tmp->name = ask_question_shelf("Ny hylla: ");
 
 	  output_int("Nuvarande antal", tmp->amount);
@@ -521,7 +557,6 @@ void edit_goods(tree_t *tree, action_t *action)
       
     case 'A':
     default:
-      return;
       break;
     }
 }

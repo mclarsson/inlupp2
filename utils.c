@@ -358,6 +358,11 @@ char *ask_menu_option(char *menu)
     
   } while(!passed || length == 0);
 
+  for (int i = 0; i < items_length; ++i)
+    {
+      free(items[i]);
+    }
+  
   return strdup(str);
 }
 
@@ -422,7 +427,9 @@ char *int_to_str(int number)
 /// \param content int after colon
 void output_int(char *title, int number)
 {
-  output(title, int_to_str(number));
+  char *num = int_to_str(number);
+  output(title, num);
+  free(num);
 }
 
 /// Prints out price in kr.
@@ -456,4 +463,6 @@ void output_price(char *title, int price)
 
   price_str[price_length] = '\0';
   output(title, price_str);
+  free(a);
+  free(b);
 }
