@@ -14,7 +14,6 @@ typedef struct node node_t;
 struct tree {
   node_t *top;
   tree_cmp_t *cmp_f;
-  bool balanced;
   int size;
 };
 
@@ -51,10 +50,32 @@ tree_t *tree_new(tree_cmp_t *cmp)
   if (new && cmp)
     {
       new->cmp_f = cmp;
-      new->balanced = true;
     }
 
   return new;
+}
+
+/// Determine if a node is a leaf, e.g. it has no children
+///
+/// \param node node to check
+/// \returns: true if node has no children, false otherwise
+bool is_leaf(node_t *node)
+{
+  return node->left == NULL && node->right == NULL;
+}
+
+/// Count the amount of children a node has (NOT DEPTH)
+///
+/// \param node node to count
+/// \returns: 0, 1 or 2 depending on count
+int count_children(node_t *node)
+{
+  if (node == NULL) return 0;
+  
+  int count = 0;
+  if (node->left != NULL)  ++count;
+  if (node->right != NULL) ++count;
+  return count;
 }
 
 /// Frees node and subtrees
@@ -247,20 +268,15 @@ void tree_apply(tree_t *tree, enum tree_order order, tree_action2 fun, void *dat
 /// \return true if tree is balanced, otherwise false
 bool check_balanced(tree_t *tree)
 {
+  // Empty tree is balanced
+  if (tree->top == NULL) return true;
+  
   int left_depth = count_depth(tree->top->left);
   int right_depth = count_depth(tree->top->right);
   int balance_factor = abs(left_depth - right_depth);
   return balance_factor < 2;
 }
 
-/// Check if a tree has been flagged as balanced
-///
-/// \param tree tree to check
-/// \return true if tree is balanced, otherwise false
-bool is_balanced(tree_t *tree)
-{
-  return tree->balanced;
-}
  
 /// Rotates nodes according to AVL right rotation
 ///
@@ -298,8 +314,8 @@ node_t *avl_rotate_right(node_t *C)
 /// \returns new top node
 node_t *avl_rotate_left_right(node_t *C)
 {
-  node_t *B = C->left;
-  node_t *A = B->right;
+  node_t *A = C->left;
+  node_t *B = A->right;
 
   node_t *B_left = B->left;
 
@@ -307,7 +323,7 @@ node_t *avl_rotate_left_right(node_t *C)
   C->left = B;
   A->right = B_left;
   
-  return avl_rotate_right(B);
+  return avl_rotate_right(C);
 }
 
 /// Rotates nodes according to AVL right-left rotation
@@ -325,7 +341,7 @@ node_t *avl_rotate_right_left(node_t *A)
   A->right = B;
   C->left = B_right;
   
-  return avl_rotate_left(B);
+  return avl_rotate_left(A);
 }
 
 /// Balances subtree
@@ -340,7 +356,7 @@ node_t *balance_subtree(tree_t *tree, node_t *node)
   if (node->right) node->right = balance_subtree(tree, node->right);
 
   // No need to continue balancing if tree is balanced
-  if (is_balanced(tree)) return node;
+  //if (is_balanced(tree)) return node;
 
   int left_depth = count_depth(node->left);
   int right_depth = count_depth(node->right);
@@ -373,8 +389,6 @@ node_t *balance_subtree(tree_t *tree, node_t *node)
 	  child = avl_rotate_right(node);
 	}
     }
-
-  tree->balanced = check_balanced(tree);
   
   return child;
 }
@@ -394,7 +408,6 @@ bool balance_tree(tree_t *tree)
     }
   else
     {
-      tree->balanced = false;
       tree->top = balance_subtree(tree, top);
       return true;
     }
@@ -431,6 +444,66 @@ bool tree_insert(tree_t *tree, tree_key_t key, tree_value_t value)
     {
       return false;
     }
+}
+
+/// Removes node
+void remove_node(node_t **node)
+{
+  // Three possibilities arise when deleting a node
+  // 1. The node is a leaf, simply remove it
+  if (is_leaf(*node))
+    {
+      free(*node);
+      *node = NULL;
+    }
+  // 2. Node has one child, replace it with that child
+  else if (count_children(*node) == 1)
+    {
+      node_t *replacement;
+
+      if ((*node)->left != NULL)
+	{
+	  replacement = (*node)->left;
+	}
+      else
+	{
+	  replacement = (*node)->right;
+	}
+
+      free(*node);
+      *node = replacement;
+    }
+  // 3. Node has two children, replace node with inorder successor in tree, remove successor
+  else
+    {
+      // Find successor (the smallest key in right subtree)
+      node_t **successor = &(*node)->right;
+      while ((*successor)->left != NULL)
+	{
+	  successor = &(*successor)->left;
+	}
+
+      (*node)->key = (*successor)->key; 
+      (*node)->value = (*successor)->value;
+      remove_node(successor);
+    }
+}
+
+/// Removes node from tree
+///
+/// \param tree pointer to the tree
+/// \param key the key of elem to be removed
+/// \returns: the removed element
+tree_value_t tree_remove(tree_t *tree, tree_key_t key)
+{
+  node_t **node = search_tree(tree, key);
+
+  if (*node == NULL) return (tree_value_t)  { .p = NULL};
+  
+  tree_value_t value = (*node)->value;
+  remove_node(node);
+  balance_tree(tree);
+  return value;
 }
 
 /// Checks whether a key is used in a tree
