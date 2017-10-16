@@ -453,7 +453,6 @@ void remove_node(node_t **node)
   // 1. The node is a leaf, simply remove it
   if (is_leaf(*node))
     {
-      free(*node);
       *node = NULL;
     }
   // 2. Node has one child, replace it with that child
@@ -470,7 +469,7 @@ void remove_node(node_t **node)
 	  replacement = (*node)->right;
 	}
 
-      free(*node);
+      //free(*node);
       *node = replacement;
     }
   // 3. Node has two children, replace node with inorder successor in tree, remove successor
@@ -502,6 +501,7 @@ tree_value_t tree_remove(tree_t *tree, tree_key_t key)
   
   tree_value_t value = (*node)->value;
   remove_node(node);
+  --tree->size;
   balance_tree(tree);
   return value;
 }

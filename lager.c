@@ -73,8 +73,7 @@ int event_loop()
 
 	case 'T':
 	  //remove goods
-	  puts("Ej implementerad än");
-	  //remove_goods(catalog);
+	  remove_goods(catalog, act);
 	  break;
 
 	case 'R':

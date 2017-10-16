@@ -52,7 +52,11 @@ void list_goods(tree_t *tree);
 
 void edit_goods(tree_t *tree, action_t *action);
 
-void remove_goods(tree_t *tree);
+/// Presents user with list of items, removes selected item
+///
+/// \param tree tree to remove in
+/// \param action action to save removed item in
+void remove_goods(tree_t *tree, action_t *action);
 
 void undo_action(tree_t *tree, action_t *action);
 

@@ -42,7 +42,7 @@ struct action
   enum { NOTHING, ADD, REMOVE, EDIT } type;
   union
   {
-    struct { item_t saved; };      // REMOVE
+    struct { goods_t saved; };      // REMOVE
     struct { item_t *edited; item_t original; }; // EDIT
   };
 };
@@ -92,8 +92,18 @@ action_t *action_new()
 /// \param action action to remove
 void free_action(action_t *action)
 {
-  list_delete(action->original.shelves, &free_shelf);
-  free(action->original.description);
+  if (action->type == EDIT)
+    {
+      list_delete(action->original.shelves, &free_shelf);
+      free(action->original.description);
+    }
+  else if (action->type == ADD || action->type == REMOVE)
+    {
+      tree_key_t key = { .p = action->saved.name };
+      tree_value_t item = { .p = action->saved.item };
+      free_goods(key, item);
+    }
+    
   free(action);
 }
 
@@ -163,6 +173,12 @@ void undo_action(tree_t *tree, action_t *action)
       
       // Remove all saved shelves
       list_clear(action->original.shelves, &free_shelf);
+    }
+  else if (action->type == REMOVE)
+    {
+      tree_key_t key = { .p = action->saved.name };
+      tree_value_t item = { .p = action->saved.item };
+      tree_insert(tree, key, item);
     }
   else if (action->type == ADD)
     {
@@ -402,7 +418,6 @@ goods_t select_goods(tree_t *tree)
   int index = 0;
   int current_page = 1;
   bool view_next = true;
-  char *input;
   
   while (size > index && view_next)
     {
@@ -418,7 +433,7 @@ goods_t select_goods(tree_t *tree)
 	  printf("%d.\t%s\n", k, (char *)items[index].p);
 	}
 
-      input = ask_menu_option("\nVälj vara [1-20], [n]ästa sida eller [a]vbryt");
+      char *input = ask_menu_option("\nVälj vara [1-20], [n]ästa sida eller [a]vbryt");
 	
       if (is_number(input))
 	{
@@ -436,6 +451,7 @@ goods_t select_goods(tree_t *tree)
 	}
       else if (is(input, "A"))
 	{
+	  free(input);
 	  view_next = false;
 	}
       else if(is(input, "N"))
@@ -445,9 +461,16 @@ goods_t select_goods(tree_t *tree)
     }
   
 
-  free(input);
   free(items);
   return (goods_t) { .name = NULL, .item = NULL };
+}
+
+void remove_goods(tree_t *tree, action_t *action)
+{
+  goods_t selected = select_goods(tree);
+  tree_remove(tree, (tree_key_t)  { .p = selected.name } );
+  action->type = REMOVE;
+  action->saved = selected;
 }
 
 /// Presents list of items in tree
