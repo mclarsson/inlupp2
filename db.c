@@ -468,7 +468,29 @@ goods_t select_goods(tree_t *tree)
 void remove_goods(tree_t *tree, action_t *action)
 {
   goods_t selected = select_goods(tree);
-  tree_remove(tree, (tree_key_t)  { .p = selected.name } );
+  int shelf_length = list_length(selected.item->shelves);
+  
+  if (shelf_length > 1)
+    {
+      for (int i = 1; i <= shelf_length; ++i)
+	{
+	  shelf_t *shelf = list_get(selected.item->shelves, i - 1).p;
+	  printf("\n%d. %s (%d stycken)", i, shelf->name, shelf->amount);
+	}
+
+      int index = ask_question_int("\n\nVilken plats skall tas bort (0 för ingen)?") - 1;
+
+      if (index != 0)
+	{
+	  list_value_t val = { .p = NULL };
+	  list_remove(selected.item->shelves, index, val);
+	}
+    }
+  else
+    {
+      tree_remove(tree, (tree_key_t)  { .p = selected.name } );
+    }
+  
   action->type = REMOVE;
   action->saved = selected;
 }
