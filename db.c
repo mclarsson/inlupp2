@@ -42,7 +42,7 @@ struct action
   enum { NOTHING, ADD, REMOVE, EDIT } type;
   union
   {
-    struct { goods_t saved; };      // REMOVE
+    struct { goods_t saved; shelf_t *saved_shelf; };      // REMOVE
     struct { item_t *edited; item_t original; }; // EDIT
   };
 };
@@ -102,6 +102,8 @@ void free_action(action_t *action)
       tree_key_t key = { .p = action->saved.name };
       tree_value_t item = { .p = action->saved.item };
       free_goods(key, item);
+      free(action->saved_shelf->name);
+      free(action->saved_shelf);
     }
     
   free(action);
@@ -177,8 +179,20 @@ void undo_action(tree_t *tree, action_t *action)
   else if (action->type == REMOVE)
     {
       tree_key_t key = { .p = action->saved.name };
-      tree_value_t item = { .p = action->saved.item };
-      tree_insert(tree, key, item);
+
+      if (tree_has_key(tree, key))
+	{
+	  // Only a shelf was removed
+	  shelf_t *tmp = action->saved_shelf;
+	  list_value_t shelf = { .p = make_shelf(strdup(tmp->name), tmp->amount) };
+	  list_append(action->saved.item->shelves, shelf);
+	}
+      else
+	{
+	  // Entire item was removed
+	  tree_value_t item = { .p = action->saved.item };
+	  tree_insert(tree, key, item);
+	}
     }
   else if (action->type == ADD)
     {
@@ -480,8 +494,14 @@ void remove_goods(tree_t *tree, action_t *action)
 
       int index = ask_question_int("\n\nVilken plats skall tas bort (0 för ingen)?") - 1;
 
-      if (index != 0)
+      if (index >= 0 && index < shelf_length)
 	{
+	  // save removed shelf in action->saved_shelf
+	  shelf_t *tmp = list_get(selected.item->shelves, index).p;
+	  action->saved_shelf = make_shelf(strdup(tmp->name), tmp->amount);
+
+	  printf("\n\n TOG BORT %p %p", tmp, action->saved_shelf);
+	  
 	  list_value_t val = { .p = NULL };
 	  list_remove(selected.item->shelves, index, val);
 	}

@@ -236,6 +236,12 @@ bool list_remove(list_t *list, int index, list_value_t elem)
 	}
       
       prev->next = remove->next;
+
+      if (pos == size - 1)
+	{
+	  // Remove last item
+	  list->last = prev;
+	}
     }
   
   elem = remove->value;
