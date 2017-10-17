@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "list.h"
 #include "tree.h"
+#include "storage.c"
 
 //
 // Types
@@ -97,7 +98,7 @@ void free_action(action_t *action)
       list_delete(action->original.shelves, &free_shelf);
       free(action->original.description);
     }
-  else if (action->type == ADD || action->type == REMOVE)
+  else if (/*action->type == ADD || */action->type == REMOVE)
     {
       tree_key_t key = { .p = action->saved.name };
       tree_value_t item = { .p = action->saved.item };
@@ -637,4 +638,107 @@ void edit_goods(tree_t *tree, action_t *action)
     default:
       break;
     }
+}
+
+/// Store item in file along with shelves
+///
+/// \param name name of item
+/// \param value tree value with item
+/// \param data pointer to file
+void store_item(tree_key_t name, tree_value_t value, void *data)
+{
+  FILE *file = data;
+  item_t *item = value.p;
+  int shelves_length = list_length(item->shelves);
+  
+  // Store name
+  store_int(file, strlen(name.p) + 1);
+  store_string(file, name.p);
+
+  // Store description
+  store_int(file, strlen(item->description) + 1);
+  store_string(file, item->description);
+
+  // Store price
+  store_int(file, item->price);
+
+  // Number of shelves
+  store_int(file, shelves_length);
+
+  // Store all shelves
+  for (int i = 0; i < shelves_length; ++i)
+    {
+      shelf_t *shelf = list_get(item->shelves, i).p;
+
+      // Shelf name
+      store_int(file, strlen(shelf->name) + 1);
+      store_string(file, shelf->name);
+
+      // Amount
+      store_int(file, shelf->amount);
+    }
+}
+
+/// Save entire catalog to file
+///
+/// \param catalog tree with items
+/// \param save_file file to save catalog to
+void save_catalog(tree_t *catalog, FILE *save_file)
+{ 
+  int size = tree_size(catalog);
+
+  fseek(save_file, 0, SEEK_SET);
+
+  store_int(save_file, size);
+  tree_apply(catalog, preorder, &store_item, (void *) save_file);
+}
+
+/// Loads content of file into catalog. If no such file exists it is created.
+///
+/// \param catalog tree to insert into
+/// \param name name of save file
+/// \returns: pointer to save_file
+FILE *load_catalog(tree_t *catalog, char *name)
+{
+  FILE *file = open_file(name);
+
+  fseek(file, 0, SEEK_SET);
+  
+  int items = load_int(file);
+
+  for (int i = 0; i < items; ++i)
+    {
+      // Load name
+      int name_size = load_int(file);
+      char *name = load_string(file, name_size);
+
+      // Load description
+      int desc_size = load_int(file);
+      char *desc = load_string(file, desc_size);
+
+      // Load price
+      int price = load_int(file);
+      
+      item_t *item = make_item(desc, price);
+
+      // Load shelves
+      int shelves_length = load_int(file);
+      for (int s = 0; s < shelves_length; ++s)
+	{
+	  // Shelf name
+	  int s_name_size = load_int(file);
+	  char *s_name = load_string(file, s_name_size);
+
+	  // Shelf amount
+	  int amount = load_int(file);
+	  
+	  add_shelf(item, s_name, amount);
+	}
+
+      tree_key_t key = { .p = name };
+      tree_value_t value = { .p = item };
+      tree_insert(catalog, key, value);
+    }
+
+  return file;
 }

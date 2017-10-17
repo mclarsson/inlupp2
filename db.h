@@ -1,6 +1,8 @@
 #ifndef __db_h__
 #define __db_h__
 
+#include <stdio.h>
+
 #include "list.h"
 #include "tree.h"
 
@@ -58,6 +60,23 @@ void edit_goods(tree_t *tree, action_t *action);
 /// \param action action to save removed item in
 void remove_goods(tree_t *tree, action_t *action);
 
+/// Undos latest action, for the moment only edits
+///
+/// \param tree Pointer to tree in which the action is to be undone
+/// \param action Action struct keeping track of what happened previously
 void undo_action(tree_t *tree, action_t *action);
+
+/// Save entire catalog to file
+///
+/// \param catalog tree with items
+/// \param save_file file to save catalog to
+void save_catalog(tree_t *catalog, FILE *save_file);
+
+/// Loads content of file into catalog. If no such file exists it is created.
+///
+/// \param catalog tree to insert into
+/// \param name name of save file
+/// \returns: pointer to save_file
+FILE *load_catalog(tree_t *catalog, char *name);
 
 #endif

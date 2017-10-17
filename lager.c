@@ -8,6 +8,7 @@
 #include "tree.h"
 #include "list.h"
 #include "db.h"
+#include "storage.h"
 
 /// Exists program
 ///
@@ -48,6 +49,8 @@ int event_loop()
   
   tree_t *catalog = tree_new(cmp);
   action_t *act = action_new();
+
+  FILE  *save_file = load_catalog(catalog, "save_file");
   
   puts("\n\n Välkommen till lagerhantering");
   puts(" ================================= \n");
@@ -88,6 +91,11 @@ int event_loop()
 	         	  
 	case 'A':
 	  // Exit
+
+	  // Store on file
+	  save_catalog(catalog, save_file);
+	  close_file(save_file);
+	  
 	  free(cmp);
 	  tree_delete(catalog, &free_goods);
 	  free_action(act);
