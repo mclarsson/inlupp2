@@ -46,6 +46,9 @@ typedef struct link link_t;
 /// \returns: empty list
 list_t *list_new(list_cmp_t *cmp_f);
 
+link_t *link_new(list_value_t value, link_t *next);
+
+
 /// Inserts a new element at the end of the list
 ///
 /// \param list pointer to the list
@@ -85,7 +88,7 @@ void list_prepend(list_t *list, list_value_t elem);
 /// \param index the index for elem to be inserted at
 /// \param elem  the element to be inserted
 /// \returns true if succeeded, else false
-void list_insert(list_t *list, list_value_t elem);
+bool list_insert(list_t *list, int index, list_value_t elem);
 
 /// Removes an element from a list.
 ///
@@ -143,14 +146,14 @@ void list_delete(list_t *list, list_action cleanup);
 
 /// This function is used in list_apply() to allow applying a function
 /// to all elements in a list
-typedef void(*list_action2)(list_value_t *elem, void *data);
+typedef void(*list_action2)(list_value_t elem, void *data);
 
 /// Applies a function to all elements in a list in list order
 ///
 /// \param list the list
 /// \param fun the function to apply to all elements
 /// \param data an extra argument passed to each call to fun (may be NULL)
-void list_apply(list_t *list, list_action2 fun, void *data);
+bool list_apply(list_t *list, list_action2 fun, void *data);
 
 
 #endif

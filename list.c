@@ -4,7 +4,6 @@
 #include <math.h>
 #include <ctype.h>
 #include <string.h>
-
 #include "list.h"
 
 
@@ -118,7 +117,7 @@ list_value_t list_get(list_t *list, int index)
 /// \param index point of the list where the element is added
 /// \param elem element to be added to list
 /// \returns: true if successful, else false
-/*bool list_insert(list_t *list, int index,  list_value_t *elem)
+bool list_insert(list_t *list, int index,  list_value_t elem)
 {
   
   // At the start of the list
@@ -161,8 +160,8 @@ list_value_t list_get(list_t *list, int index)
   return true;
 
 }
-*/
 
+/*
 void list_insert(list_t *l, list_value_t elem)
 {
   link_t **c = &(l->first);
@@ -172,7 +171,7 @@ void list_insert(list_t *l, list_value_t elem)
     }
   *c = link_new(elem, *c);
 }
-
+*/
 
 
 /// Get the length of a list

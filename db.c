@@ -137,6 +137,18 @@ item_t *make_item(char *description, int price)
   return new;
 }
 
+
+
+goods_t *make_goods(char* name, item_t *item, list_value_t shelf)
+{
+  goods_t *tmp = calloc(1, sizeof(goods_t));
+  item->shelves = shelf.p;
+  tmp->name = name;
+  tmp->item = item;
+  return tmp;
+}
+
+
 /// Adds shelf to item
 ///
 /// \param item Item to add to
@@ -325,6 +337,7 @@ item_t *input_item(tree_t *tree)
   
   return item;
 }
+
 
 /// Adds item to tree
 ///
