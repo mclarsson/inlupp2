@@ -88,7 +88,7 @@ void list_prepend(list_t *list, list_value_t elem);
 /// \param index the index for elem to be inserted at
 /// \param elem  the element to be inserted
 /// \returns true if succeeded, else false
-bool list_insert(list_t *list, int index, list_value_t elem);
+void list_insert(list_t *list, int index, list_value_t elem);
 
 /// Removes an element from a list.
 ///
@@ -102,19 +102,19 @@ bool list_insert(list_t *list, int index, list_value_t elem);
 /// \param index the index to be removed
 /// \param elem a pointer to where the element can be stored
 /// \returns true if succeeded, else false
-bool list_remove(list_t *list, int index, list_value_t elem);
+void list_remove(list_t *list, int index, list_value_t elem);
 
 /// Returns the element at a given index
 /// \param list  pointer to the list
 /// \param index the index to be returned
 /// \returns a pointer to the element at index index
-list_value_t list_get(list_t *list, int index);
+void list_get(list_t *list, int index, list_value_t *result);
 
 /// A convenience for list_get(list, 0)
-list_value_t list_first(list_t *list);
+void list_first(list_t *list, list_value_t *result);
 
 /// A convenience for list_get(list, -1)
-list_value_t list_last(list_t *list);
+void list_last(list_t *list, list_value_t *result);
 
 /// Returns the length of the list. It is undefined
 /// whether the length is calculated in O(n) time or
@@ -134,7 +134,7 @@ int list_length(list_t *list);
 ///
 /// \param list the list
 /// \param cleanup variable to clear all parts of a link
-void list_clear(list_t *list, list_action cleanup);
+void list_clear(list_t *list);
 
 /// Deletes a list. 
 ///
@@ -142,7 +142,7 @@ void list_clear(list_t *list, list_action cleanup);
 /// \param cleanup a function that takes an element as
 ///        argument, to be used to free memory. If this param is 
 ///        NULL, no cleanup of keys or elements will happen.
-void list_delete(list_t *list, list_action cleanup);
+void list_delete(list_t *list, bool delete);
 
 /// This function is used in list_apply() to allow applying a function
 /// to all elements in a list
@@ -154,6 +154,9 @@ typedef void(*list_action2)(list_value_t elem, void *data);
 /// \param fun the function to apply to all elements
 /// \param data an extra argument passed to each call to fun (may be NULL)
 bool list_apply(list_t *list, list_action2 fun, void *data);
+
+
+int list_contains(list_t *list, list_value_t elem);
 
 
 #endif

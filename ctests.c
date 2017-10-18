@@ -5,7 +5,7 @@
 #include "list.h"
 #include "tree.h"
 #include "db.c"
-//#include "CUnit/Basic.h"
+#include "CUnit/Basic.h"
 
 
 
@@ -33,7 +33,7 @@ int clean_suite(void)
 void test_list_new(void)
 {
   list_t *list = list_new(NULL);
-  CU_ASSERT_TRUE( list != NULL );
+  CU_ASSERT( list != NULL );
 }
 
 /*

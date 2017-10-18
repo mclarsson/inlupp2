@@ -100,14 +100,15 @@ void list_prepend(list_t *list, list_value_t elem)
 /// \param list list that is searched for value
 /// \param index indicator for which element to return
 /// \returns: pointer to whatever value is stored at index
-list_value_t list_get(list_t *list, int index)
+void list_get(list_t *list, int index, list_value_t *result)
 {
+  list->first = link_new(*result, list->first);
   link_t *cursor = list->first;
   for (int i = 0; cursor->next != NULL && i < index; i++)
     {
       cursor = cursor->next;
     }
-  return cursor->value;
+  *result = cursor->value;
 }
 
 
@@ -117,34 +118,31 @@ list_value_t list_get(list_t *list, int index)
 /// \param index point of the list where the element is added
 /// \param elem element to be added to list
 /// \returns: true if successful, else false
-bool list_insert(list_t *list, int index,  list_value_t elem)
+void list_insert(list_t *list, int index,  list_value_t elem)
 {
   
   // At the start of the list
   if (index == 0)
     {
       list_prepend(list, elem);
-      return true;
     }
 
   // At the end of the list
   else if (index == list_length(list))
     {
       list_append(list, elem);
-      return true;
     }
 
   // Out of bounds (index too small)
   else if (index < 0)
       {
-        return list_insert(list, index + list_length(list), elem);
+        list_insert(list, index + list_length(list), elem);
       }
 
   // Out of bounds (index too large)
   else if (index > list_length(list))
     {
       puts("Not a valid index.\n");
-      return false;
     }
 
   link_t *cursor = list->first;
@@ -156,22 +154,9 @@ bool list_insert(list_t *list, int index,  list_value_t elem)
   link_t *tmp = cursor->next;
   link_t *new_link = link_new(elem, tmp);
   cursor->next = new_link;
-  
-  return true;
 
 }
 
-/*
-void list_insert(list_t *l, list_value_t elem)
-{
-  link_t **c = &(l->first);
-  while (*c && (*l->cmp_f)((*c)->value, elem))
-    {
-      c = &((*c)->next);
-    }
-  *c = link_new(elem, *c);
-}
-*/
 
 
 /// Get the length of a list
@@ -199,7 +184,7 @@ int list_length(list_t *list)
 /// \param index point of the list indicating the element
 /// \param elem element to be removed
 /// \returns: true if successful, else false
-bool list_remove(list_t *list, int index, list_value_t elem)
+void list_remove(list_t *list, int index, list_value_t elem)
 {
   // Link to remove
   link_t *remove = list->first;
@@ -210,7 +195,6 @@ bool list_remove(list_t *list, int index, list_value_t elem)
   if (size == 0 || pos < 0 || pos > size - 1)
     {
       // Out of bounds
-      return false;
     }
   else if (pos == 0)
     {
@@ -246,14 +230,19 @@ bool list_remove(list_t *list, int index, list_value_t elem)
   elem = remove->value;
   
   free(remove);
-  return true;
+}
+
+
+void cleanup(list_value_t elem)
+{
+  elem.i = 0;
 }
 
 /// Iterates through a list and frees all the allocated memory bound to it
 ///
 /// \param list the list
 /// \param cleanup variable to clear all parts of a link
-void list_clear(list_t *list, list_action cleanup)
+void list_clear(list_t *list)
 {
   link_t *cursor = list->first;
   while (cursor != NULL)
@@ -272,20 +261,22 @@ void list_clear(list_t *list, list_action cleanup)
 ///
 /// \param list the list
 /// \param cleanup variable to clear all parts of a link
-void list_delete(list_t *list, list_action cleanup)
+void list_delete(list_t *list, bool delete)
 {
-  list_clear(list, cleanup);
+  if(delete)
+    {
+  list_clear(list);
   free(list);
+    }
 }
 
 
 /// Get the value of the first element in a list
 ///
 /// \param list the list
-/// \returns: pointer to the first value in list
-list_value_t list_first(list_t *list)
+void list_first(list_t *list, list_value_t *result)
 {
-  return list->first->value;
+  list_get(list, 0, result);
 }
 
 
@@ -293,16 +284,38 @@ list_value_t list_first(list_t *list)
 /// Get the value of the last element in a list
 ///
 /// \param list the list
-/// \returns: pointer to the last value in list
-list_value_t list_last(list_t *list)
+void list_last(list_t *list, list_value_t *result)
 {
-  return list->last->value;
+  list_get(list, -1, result);
 }
 
-void cleanup(list_value_t elem)
+
+
+bool list_apply(list_t *list, list_action2 fun, void *data)
 {
-  elem.i = 0;
+  link_t *cursor = list->first;
+  while (cursor)
+    {
+      fun(list->first->value, data);
+      cursor = cursor->next;
+    }
+  
+  return true;
 }
+
+
+int list_contains(list_t *list, list_value_t elem)
+{
+  int i = 0;
+  link_t *cursor = list->first;
+  while (((*list->cmp_f)(cursor->value, elem)) != 0 && cursor != NULL)
+  {
+    cursor = cursor->next;
+    i++;
+  }
+  return i;
+}
+
 
 /*
 int cmp_ex(list_value_t e1, list_value_t e2)
