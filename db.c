@@ -251,6 +251,29 @@ void print_item(char *name, item_t *item)
     }
 }
 
+shelf_t *get_item_shelf(item_t *item, char *shelf_name)
+{
+  list_t *shelves = item->shelves;
+  int shelf_length = list_length(shelves);
+      
+  for (int j = 0; j < shelf_length; ++j)
+    {
+      shelf_t *shelf = (shelf_t *) list_get(shelves, j).p;
+          
+      if (strcmp(shelf_name, shelf->name) == 0)
+	{
+	  return shelf;
+	}
+    }
+
+  return NULL;
+}
+
+bool item_has_shelf(item_t *item, char *shelf_name)
+{
+  return get_item_shelf(item, shelf_name) != NULL;
+}
+
 /// Check if shelf exists in system
 ///
 /// \param tree the tree to be searched
@@ -260,28 +283,19 @@ bool shelf_exists(tree_t *tree, char *name)
 {
   tree_value_t *items = tree_values(tree);
   int size = tree_size(tree);
+  bool exists = false;
   
   for (int i = 0; i < size; ++i)
     {
-      item_t *item = items[i].p;
-      list_t *shelves = item->shelves;
-      int shelf_length = list_length(shelves);
-      
-      for (int j = 0; j < shelf_length; ++j)
+      exists = item_has_shelf(items[i].p, name);
+      if (exists)
 	{
-          shelf_t *shelf = (shelf_t *) list_get(shelves, j).p;
-          
-
-	  if (strcmp(name, shelf->name) == 0)
-	    {
-	      free(items);
-	      return true;
-	    }
+	  break;
 	}
     }
 
   free(items);
-  return false;
+  return exists;
 }
 
 
@@ -338,6 +352,32 @@ item_t *input_item(tree_t *tree)
   return item;
 }
 
+void insert_goods(tree_t *tree, tree_key_t key, tree_value_t item)
+{
+  tree_insert(tree, key, item);
+}
+
+bool insert_shelf(tree_t *tree, item_t *item, char  *shelf_name, int amount)
+{
+  if (!shelf_exists(tree, shelf_name))
+    { 
+      // Add new shelf
+      add_shelf(item, shelf_name, amount);
+      return true;
+    }
+  else
+    {
+      shelf_t *match = get_item_shelf(item, shelf_name);
+      if (match != NULL)
+	{ 
+	  // Aggregate shelf amount
+	  match->amount += amount;
+	  return true;
+	}
+    }
+
+  return false;
+}
 
 /// Adds item to tree
 ///
@@ -351,85 +391,61 @@ void add_goods(tree_t *tree, action_t *action)
   action->type = ADD;
 
   // Get inputs until aborted or saved
-  do {
-    tree_key_t key = { .p = ask_question_string("Namn:") };
+  while (!(abort || save))
+    {
+      tree_key_t key = { .p = ask_question_string("Namn:") };
     
-    if (tree_has_key(tree, key))
-      {
-	puts("Varan finns redan, lägger till ny hylla");
+      if (tree_has_key(tree, key))
+	{
+	  puts("Varan finns redan, lägger till ny hylla");
 	
-        item_t *item = (item_t*) tree_get(tree, key).p;
-	free(key.p);
+	  item_t *item = (item_t *) tree_get(tree, key).p;
+	  free(key.p);
 
-	// Ask for shelfname until it's either new or if it already belongs to item
-	do {
-	  char *shelf_name = ask_question_shelf("Hylla:");
-	  
-	  if (!shelf_exists(tree, shelf_name))
-	    { 
-	      // Add new shelf
-	      int amount = ask_question_int("Antal:");
-              list_value_t shelf = { .p = make_shelf(shelf_name, amount) };
-
-	      list_append(item->shelves, shelf);
-
-	      save = true;
-	    }
-	  else
+	  // Ask for shelfname until it's either new or if it already belongs to item
+	  while (!save)
 	    {
-	      // Shelf exists, check if item has shelf
-	      int shelf_length = list_length(item->shelves);
-	      for (int i = 0; i < shelf_length; ++i)
-		{
+	      char *shelf_name = ask_question_shelf("Hylla:");
+	      int amount = ask_question_int("Antal:");
 
-		  shelf_t *match = (shelf_t *) list_get(item->shelves, i).p;
-		  if (strcmp(shelf_name, match->name) == 0)
-		    {
-		      // Aggregate shelf amount
-		      match->amount += ask_question_int("Lägg till antal:");
-		      save = true;
-		      break;
-		    }
-		}
-
-	      if (!save)
+	      if (!item_has_shelf(item, shelf_name))
 		{
 		  puts("Hyllan tillhör inte varan");
 		}
+	      
+	      save = insert_shelf(tree, item, shelf_name, amount);
 	    }
-	  
-	} while(!save);
-      }
-    else
-      {
-	// Name not already in tree
+	}
+      else
+	{
+	  // Name not already in tree
 
-	// Create item from inputs
-        tree_value_t item = { .p = input_item(tree) };
+	  // Create item from inputs
+	  tree_value_t item = { .p = input_item(tree) };
 
-	// Confirm item
-	print_item(key.p, item.p);
+	  // Confirm item
+	  print_item(key.p, item.p);
 	
-	puts("\nVill du lägga till?");
-	char input = ask_question_char_in_str("[J]a, [n]ej, [r]edigera", "JNR");
+	  puts("\nVill du lägga till?");
+	  char input = ask_question_char_in_str("[J]a, [n]ej, [r]edigera", "JNR");
 
-	if (input == 'J')
-	  {
-	    tree_insert(tree, key, item);
-	    save = true;
-	  }
-	else if (input == 'N')
-	  {
-	    // Free what is not to be saved
-            list_value_t null = { .p = NULL };
-	    list_remove(((item_t *) item.p)->shelves, 0, null);
-	    free(((item_t *) item.p)->shelves);
-	    free(item.p);
+	  if (input == 'J')
+	    {
+	      insert_goods(tree, key, item);
+	      save = true;
+	    }
+	  else if (input == 'N')
+	    {
+	      // Free what is not to be saved
+	      list_value_t null = { .p = NULL };
+	      list_remove(((item_t *) item.p)->shelves, 0, null);
+	      free(((item_t *) item.p)->shelves);
+	      free(item.p);
 	    
-	    abort = true;
-	  }
-      }
-  } while (!(abort || save));
+	      abort = true;
+	    }
+	}
+    }
 }
 
 /// Presents list of items and returns chosen item along with name
@@ -493,13 +509,38 @@ goods_t select_goods(tree_t *tree)
   return (goods_t) { .name = NULL, .item = NULL };
 }
 
+void remove_shelf(item_t *item, int index, action_t *action)
+{
+  int shelves_length = list_length(item->shelves);
+  if (index >= 0 && index < shelves_length)
+    {
+      // save removed shelf
+      shelf_t *tmp = list_get(item->shelves, index).p;
+      action->saved_shelf = make_shelf(strdup(tmp->name), tmp->amount);
+	  
+      list_value_t val = { .p = NULL };
+      list_remove(item->shelves, index, val);
+      
+      action->type = REMOVE;
+    }
+}
+
+void remove_from_catalog(tree_t *tree, goods_t goods, action_t *action)
+{
+  tree_remove(tree, (tree_key_t)  { .p = goods.name } ); 
+  action->type = REMOVE;
+  action->saved = goods;
+}
+
 void remove_goods(tree_t *tree, action_t *action)
 {
   goods_t selected = select_goods(tree);
   int shelf_length = list_length(selected.item->shelves);
-  
+
+  // If item has more than one shelf, individual shelf is removed
   if (shelf_length > 1)
     {
+      // List shelves
       for (int i = 1; i <= shelf_length; ++i)
 	{
 	  shelf_t *shelf = list_get(selected.item->shelves, i - 1).p;
@@ -508,25 +549,12 @@ void remove_goods(tree_t *tree, action_t *action)
 
       int index = ask_question_int("\n\nVilken plats skall tas bort (0 för ingen)?") - 1;
 
-      if (index >= 0 && index < shelf_length)
-	{
-	  // save removed shelf in action->saved_shelf
-	  shelf_t *tmp = list_get(selected.item->shelves, index).p;
-	  action->saved_shelf = make_shelf(strdup(tmp->name), tmp->amount);
-
-	  printf("\n\n TOG BORT %p %p", tmp, action->saved_shelf);
-	  
-	  list_value_t val = { .p = NULL };
-	  list_remove(selected.item->shelves, index, val);
-	}
+      remove_shelf(selected.item, index, action);
     }
   else
     {
-      tree_remove(tree, (tree_key_t)  { .p = selected.name } );
+      remove_from_catalog(tree, selected, action);
     }
-  
-  action->type = REMOVE;
-  action->saved = selected;
 }
 
 /// Presents list of items in tree
