@@ -20,6 +20,10 @@ union list_value
 
 typedef int(*list_cmp_t)(list_value_t, list_value_t);
 
+typedef list_value_t(*list_copy_t)(list_value_t);
+
+typedef void(*list_clean_t)(list_value_t);
+
 /// This function is used in list_delete() to allow the lists which are
 /// the sole owners of their data to free the data on delete.
 typedef void(*list_action)(list_value_t elem);
@@ -44,9 +48,8 @@ typedef struct link link_t;
 ///
 /// \param cmp_f compare function
 /// \returns: empty list
-list_t *list_new(list_cmp_t *cmp_f);
+list_t *list_new(list_copy_t *, list_clean_t*, list_cmp_t *);
 
-link_t *link_new(list_value_t value, link_t *next);
 
 
 /// Inserts a new element at the end of the list
@@ -102,7 +105,7 @@ void list_insert(list_t *list, int index, list_value_t elem);
 /// \param index the index to be removed
 /// \param elem a pointer to where the element can be stored
 /// \returns true if succeeded, else false
-void list_remove(list_t *list, int index, list_value_t elem);
+void list_remove(list_t *list, int index, bool delete);
 
 /// Returns the element at a given index
 /// \param list  pointer to the list
@@ -133,8 +136,9 @@ int list_length(list_t *list);
 /// Iterates through a list and frees all the allocated memory bound to it
 ///
 /// \param list the list
+/// \param delete if true uses own clean function
 /// \param cleanup variable to clear all parts of a link
-void list_clear(list_t *list);
+void list_clear(list_t *list, bool delete);
 
 /// Deletes a list. 
 ///

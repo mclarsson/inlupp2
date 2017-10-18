@@ -12,6 +12,8 @@ struct list {
   link_t *first;
   link_t *last;
   list_cmp_t *cmp_f;
+  list_copy_t *copy_f;
+  list_clean_t *clean_f;
 };
 
 
@@ -27,13 +29,16 @@ struct link
 /// Allocates memory for/and creates a list
 ///
 /// \returns: empty list
-list_t *list_new(list_cmp_t *cmp)
+list_t *list_new(list_copy_t *copy_fun, list_clean_t *clean_fun, list_cmp_t *comp_fun)
 {
   list_t *new = calloc(1, sizeof(list_t));
   if (new)
-  {
-    new->cmp_f = cmp;
-  }
+    {
+      new->copy_f = copy_fun;
+      new->clean_f = clean_fun;
+      new->cmp_f = comp_fun;
+    }
+  
   return new;
 }
 
@@ -102,7 +107,6 @@ void list_prepend(list_t *list, list_value_t elem)
 /// \returns: pointer to whatever value is stored at index
 void list_get(list_t *list, int index, list_value_t *result)
 {
-  list->first = link_new(*result, list->first);
   link_t *cursor = list->first;
   for (int i = 0; cursor->next != NULL && i < index; i++)
     {
@@ -184,7 +188,7 @@ int list_length(list_t *list)
 /// \param index point of the list indicating the element
 /// \param elem element to be removed
 /// \returns: true if successful, else false
-void list_remove(list_t *list, int index, list_value_t elem)
+void list_remove(list_t *list, int index, bool delete)
 {
   // Link to remove
   link_t *remove = list->first;
@@ -226,30 +230,31 @@ void list_remove(list_t *list, int index, list_value_t elem)
 	  list->last = prev;
 	}
     }
-  
-  elem = remove->value;
+  if (delete)
+    {
+      (*list->clean_f)(remove->value);
+    }
   
   free(remove);
 }
 
 
-void cleanup(list_value_t elem)
-{
-  elem.i = 0;
-}
 
 /// Iterates through a list and frees all the allocated memory bound to it
 ///
 /// \param list the list
 /// \param cleanup variable to clear all parts of a link
-void list_clear(list_t *list)
+void list_clear(list_t *list, bool delete)
 {
   link_t *cursor = list->first;
   while (cursor != NULL)
     {
       link_t *tmp = cursor;
-      cursor = tmp->next;
-      cleanup(tmp->value);
+      cursor = cursor->next;
+      if (delete)
+        {
+          (*list->clean_f)(tmp->value);
+        }
       free(tmp);
     }
   
@@ -263,11 +268,9 @@ void list_clear(list_t *list)
 /// \param cleanup variable to clear all parts of a link
 void list_delete(list_t *list, bool delete)
 {
-  if(delete)
-    {
-  list_clear(list);
+  list_clear(list, delete);
+  free(list->clean_f);
   free(list);
-    }
 }
 
 
