@@ -12,15 +12,6 @@
 #include "tree.h"
 #include "storage.c"
 
-//
-// Types
-//
-
-typedef struct shelf shelf_t;
-
-typedef struct item item_t;
-
-typedef struct goods goods_t;
 
 struct item {
   char *description;
@@ -46,6 +37,10 @@ struct action
   struct { item_t *edited; item_t original; }; // EDIT
 };
 
+
+/// Frees all the available shelfs in the element
+///
+/// \param value element to be freed unless == NULL
 void free_shelf(elem_t value)
 {
   shelf_t *shelf = value.p;
@@ -56,6 +51,10 @@ void free_shelf(elem_t value)
     }
 }
 
+
+/// Frees the key-element in a tree-key
+///
+/// \param key key-value to be freed unless == NULL
 void free_key(tree_key_t key)
 {
   if (key.p)
@@ -65,6 +64,8 @@ void free_key(tree_key_t key)
 }
 
 /// Removes item along with all shelves
+///
+/// \param value item to be freed of all allocated memory
 void free_goods(elem_t value)
 {
   item_t *item = value.p;
@@ -152,8 +153,12 @@ item_t *make_item(char *description, int price)
   return new;
 }
 
-
-
+/// Makes a new goods
+///
+/// \param name name-key to be used by the item
+/// \param item item to be used as bulk of the goods
+/// \param shelf new shelf of the item
+/// \returns: new goods consisting of the name and item 
 goods_t *make_goods(char* name, item_t *item, elem_t shelf)
 {
   goods_t *tmp = calloc(1, sizeof(goods_t));
@@ -174,6 +179,7 @@ void add_shelf(item_t *item, char *name, int amount)
   elem_t new = { .p = make_shelf(name, amount) };
   list_append(item->shelves, new);
 }
+
 
 /// Undos latest action, for the moment only edits
 ///
@@ -259,6 +265,11 @@ void print_item(char *name, item_t *item)
     }
 }
 
+/// Searches for and gets a shelf
+///
+/// \param item the item to be searched
+/// \param shelf_name shelf name that is searched for
+/// \returns: specific shelf that was searched for
 shelf_t *get_item_shelf(item_t *item, char *shelf_name)
 {
   list_t *shelves = item->shelves;
@@ -279,10 +290,18 @@ shelf_t *get_item_shelf(item_t *item, char *shelf_name)
   return NULL;
 }
 
+
+/// Checks to see if an item contains a shelf
+///
+/// \param item item to be seached
+/// \param shelf_name shelf name that is seached for
+/// \returns: true if shelf was found, else false
 bool item_has_shelf(item_t *item, char *shelf_name)
 {
   return get_item_shelf(item, shelf_name) != NULL;
 }
+
+
 
 /// Check if shelf exists in system
 ///
@@ -362,11 +381,26 @@ item_t *input_item(tree_t *tree)
   return item;
 }
 
+
+/// Helps insert an item into a tree
+///
+/// \param tree the tree
+/// \param key tree-key to be used for name of the item
+/// \param item the item
 void insert_goods(tree_t *tree, tree_key_t key, elem_t item)
 {
   tree_insert(tree, key, item);
 }
 
+
+/// Checks if the shelf is in use and if not
+/// inserts the elements of a shelf into an item into a tree
+///
+/// \param tree the tree
+/// \param item the item
+/// \param shelf_name name of the shelf
+/// \param amount amount of the shelf
+/// \returns: true if successful, else false
 bool insert_shelf(tree_t *tree, item_t *item, char  *shelf_name, int amount)
 {
   if (!shelf_exists(tree, shelf_name))
@@ -464,10 +498,13 @@ void add_goods(tree_t *tree, action_t *action)
     }
 }
 
+
+
+
 /// Presents list of items and returns chosen item along with name
 ///
 /// \param tree tree to display
-/// \returns chosen item
+/// \returns: chosen item
 goods_t select_goods(tree_t *tree)
 {
   int size = tree_size(tree);
@@ -531,6 +568,12 @@ goods_t select_goods(tree_t *tree)
   return (goods_t) { .name = NULL, .item = NULL };
 }
 
+
+/// Removes a shelf from an item
+///
+/// \param item the item
+/// \param index the index of the desired shelf
+/// \param action replaces the previous action with a new one
 void remove_shelf(item_t *item, int index, action_t *action)
 {
   int shelves_length = list_length(item->shelves);
@@ -549,6 +592,12 @@ void remove_shelf(item_t *item, int index, action_t *action)
     }
 }
 
+
+/// Removes a goods from tree catalog
+///
+/// \param tree the tree
+/// \param goods the goods
+/// \param action replaces the previous action with a new one
 void remove_from_catalog(tree_t *tree, goods_t goods, action_t *action)
 {
   elem_t *elem = NULL;
@@ -556,6 +605,11 @@ void remove_from_catalog(tree_t *tree, goods_t goods, action_t *action)
   action->type = REMOVE;
 }
 
+
+/// Removes all parts of a goods from a tree
+///
+/// \param tree the tree
+/// \param action replaces the previous action with a new one
 void remove_goods(tree_t *tree, action_t *action)
 {
   goods_t selected = select_goods(tree);
