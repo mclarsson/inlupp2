@@ -1,7 +1,3 @@
-/// !! OBS -- du skall inte ändra i denna fil, med ETT undantag:
-/// !! du skall ändra i typedef av L så att det passar ditt program.
-
-
 #ifndef __list_h__
 #define __list_h__
 
@@ -14,37 +10,38 @@
 /// Define struct list in your .c file not here! (why?)
 typedef struct list list_t;
 
-/// \file list.h
-///
-/// \author Tobias Wrigstad
-/// \version 1.2
-/// \date 2017-09-13
-/// \bug None known. 
-///
-/// Changelog 2017-09-18
-/// Review changes (docs only)
-/// Added new helper functions
 
-
-/// Creates a new list
+/// Creates a new list 
 ///
-/// \param cmp_f compare function
+/// \param copy (may be NULL) a function applied to all elements when stored in the list
+/// \param free (may be NULL) used to free elements in list_delete
+/// \param compare (may be NULL) used to compare elements in list_contains
 /// \returns: empty list
 list_t *list_new(element_copy_fun copy_fun, element_free_fun clean_fun, element_comp_fun comp_fun);
 
 
 
-/// Inserts a new element at the end of the list
+/// Inserts a new element at the end of the list.
+///
+/// If list's copy function is non-NULL, it will be applied to elem and its result
+/// stored in the list. Otherwise, elem will be stored in the list. 
 ///
 /// \param list pointer to the list
 /// \param elem the element to be appended
 void list_append(list_t *list, elem_t elem);
 
+
+
 /// Inserts a new element at the beginning of the list
+///
+/// If list's copy function is non-NULL, it will be applied to elem and its result
+/// stored in the list. Otherwise, elem will be stored in the list. 
 ///
 /// \param list pointer to the list
 /// \param elem the element to be prepended
 void list_prepend(list_t *list, elem_t elem);
+
+
 
 /// Inserts a new element at a given index. 
 ///
@@ -75,6 +72,8 @@ void list_prepend(list_t *list, elem_t elem);
 /// \returns true if succeeded, else false
 void list_insert(list_t *list, int index, elem_t elem);
 
+
+
 /// Removes an element from a list.
 ///
 /// Example: (assume l == [e2, e3, e1, e4])
@@ -89,30 +88,35 @@ void list_insert(list_t *list, int index, elem_t elem);
 /// \returns true if succeeded, else false
 void list_remove(list_t *list, int index, bool delete);
 
+
+
 /// Returns the element at a given index
 /// \param list  pointer to the list
 /// \param index the index to be returned
 /// \returns a pointer to the element at index index
 bool list_get(list_t *list, int index, elem_t *result);
 
+
+
 /// A convenience for list_get(list, 0)
 bool list_first(list_t *list, elem_t *result);
+
+
 
 /// A convenience for list_get(list, -1)
 bool list_last(list_t *list, elem_t *result);
 
+
+
 /// Returns the length of the list. It is undefined
 /// whether the length is calculated in O(n) time or
 /// whether there is a size counter in the list object
-/// that is manipulated by insert, remove, etc. 
+/// that is manipulated by insert, remove, etc.
+///
 /// \param list the list
 /// \returns the length of list
 int list_length(list_t *list);
 
-//////////// ================= Added in version 1.2 
-///
-/// NOTE: Implementing these functions is NOT mandatory
-///
 
 
 /// Iterates through a list and frees all the allocated memory bound to it
@@ -122,6 +126,8 @@ int list_length(list_t *list);
 /// \param cleanup variable to clear all parts of a link
 void list_clear(list_t *list, bool delete);
 
+
+
 /// Deletes a list. 
 ///
 /// \param list pointer to the list
@@ -129,6 +135,9 @@ void list_clear(list_t *list, bool delete);
 ///        argument, to be used to free memory. If this param is 
 ///        NULL, no cleanup of keys or elements will happen.
 void list_delete(list_t *list, bool delete);
+
+
+
 
 /// Applies a function to all elements in a list in list order
 ///
@@ -138,6 +147,14 @@ void list_delete(list_t *list, bool delete);
 bool list_apply(list_t *list, elem_apply_fun fun, void *data);
 
 
+
+/// Searches for an element in a list
+///
+/// Uses list's compare if non-NULL, otherwise uses == for comparison. 
+///
+/// \param list the list
+/// \param elem the element to search for
+/// \returns the index of elem in list, or -1 if not found
 int list_contains(list_t *list, elem_t elem);
 
 

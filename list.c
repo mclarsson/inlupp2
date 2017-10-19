@@ -23,12 +23,14 @@ struct link
 {
   elem_t value;
   link_t *next;
-  //cmp_t *cmp_f;
 };
 
 
 /// Allocates memory for/and creates a list
 ///
+/// \param copy_fun copy function to be used to copy lists
+/// \param clean_fun delete function to be used to free all parts of a list
+/// \param comp_fun compare function to be used for comparing two elements of list_value_t type
 /// \returns: empty list
 list_t *list_new(element_copy_fun copy_fun, element_free_fun clean_fun, element_comp_fun comp_fun)
 {
@@ -71,11 +73,15 @@ link_t *link_new(elem_t value, link_t *next)
 void list_append(list_t *list, elem_t elem)
 {
   link_t *new = link_new(elem, NULL);
+  
+  // If this is an empty list
   if (list->first == NULL)
     {
       list->first = new;
       list->last = new;
     }
+  
+  // If the element is to be added to a non-empty list
   else
     {
       list->last->next = new;
@@ -93,6 +99,8 @@ void list_append(list_t *list, elem_t elem)
 void list_prepend(list_t *list, elem_t elem)
 {
   list->first = link_new(elem, list->first);
+
+  // If this is an empty list
   if (list->last == NULL)
     {
       list->last = list->first;
@@ -105,7 +113,9 @@ void list_prepend(list_t *list, elem_t elem)
 ///
 /// \param list list that is searched for value
 /// \param index indicator for which element to return
-/// \returns: pointer to whatever value is stored at index
+/// \param result the element of which the result is designated to return as
+/// \returns: boolean determining if it was a success or not, also a pointer
+///           to the result element
 bool list_get(list_t *list, int index, elem_t *result)
 {
   link_t *cursor = list->first;
@@ -129,7 +139,6 @@ bool list_get(list_t *list, int index, elem_t *result)
 /// \param list the list
 /// \param index point of the list where the element is added
 /// \param elem element to be added to list
-/// \returns: true if successful, else false
 void list_insert(list_t *list, int index,  elem_t elem)
 {
   
@@ -171,11 +180,10 @@ void list_insert(list_t *list, int index,  elem_t elem)
 
 
 
-/// Get the length of a list
+/// Gets the length of a list
 ///
 /// \param list the list
 /// \returns: length of the list
-  
 int list_length(list_t *list)
 {
   int counter = 0;
@@ -195,7 +203,8 @@ int list_length(list_t *list)
 /// \param list the list
 /// \param index point of the list indicating the element
 /// \param elem element to be removed
-/// \returns: true if successful, else false
+/// \param delete boolean determining if the function is to
+///         use the clean function, true is yes, false if no
 void list_remove(list_t *list, int index, bool delete)
 {
   // Link to remove
@@ -251,7 +260,8 @@ void list_remove(list_t *list, int index, bool delete)
 /// Iterates through a list and frees all the allocated memory bound to it
 ///
 /// \param list the list
-/// \param cleanup variable to clear all parts of a link
+/// \param delete boolean determining if the function is to use the clean
+///        function, true is yes, false if no
 void list_clear(list_t *list, bool delete)
 {
   link_t *cursor = list->first;
@@ -273,7 +283,7 @@ void list_clear(list_t *list, bool delete)
 /// Iterates through a list and frees all the allocated memory bound to it, including itself
 ///
 /// \param list the list
-/// \param cleanup variable to clear all parts of a link
+/// \param delete boolean sent to be used in the help function, list_clear
 void list_delete(list_t *list, bool delete)
 {
   if (list != NULL)
@@ -287,6 +297,7 @@ void list_delete(list_t *list, bool delete)
 /// Get the value of the first element in a list
 ///
 /// \param list the list
+/// \param result the element of which the result is designated to return as
 bool list_first(list_t *list, elem_t *result)
 {
   return list_get(list, 0, result);
@@ -297,13 +308,20 @@ bool list_first(list_t *list, elem_t *result)
 /// Get the value of the last element in a list
 ///
 /// \param list the list
+/// \param result
+/// \param result the element of which the result is designated to return as
 bool list_last(list_t *list, elem_t *result)
 {
   return list_get(list, -1, result);
 }
 
 
-
+/// Applies a given function to all elements of a list
+///
+/// \param list the list
+/// \param function_apply the function to be applied to all elements
+/// \param data data to be sent for further usage in the applied function
+/// \returns: boolean returning true if succesful, else false
 bool list_apply(list_t *list, elem_apply_fun fun, void *data)
 {
   link_t *cursor = list->first;
@@ -317,6 +335,11 @@ bool list_apply(list_t *list, elem_apply_fun fun, void *data)
 }
 
 
+/// Checks to see if the list contains a specific element and if so returns its index
+///
+/// \param list the list
+/// \param element element to be searched for
+/// \returns: integer of which index of the list the value (if it exists) is located at
 int list_contains(list_t *list, elem_t elem)
 {
   int i = 0;
@@ -328,46 +351,3 @@ int list_contains(list_t *list, elem_t elem)
   }
   return i;
 }
-
-
-/*
-intt cmp_ex(elem_t e1, elem_t e2)t
-{
-  return e1.i < et2.i ? -1 : et1.i ==t e2.i ? 0 : 1;
-}
-
-
-
-int main(int argc, char *argv[])
-{
-  ttcmp_t cmp = &cmp_ex;
-  list_t *new = list_ttnew(&cmp);
-  //int length = 100;
-  for (int index = 0; ttindex < length; ++index)
-    {
-      //printf("Link: %d\n", i);
-      //int a = index;
-      // elem_t e;
-      //e.i = a;
-      
-      list_insert(new, t&((elem_t) { .i = index }));
-    }
-  
-  list_insert(new, ((elem_t) { t.ti = 1 }));
-  list_insert(new, ((elem_t) { t.i t= 2 }));
-  list_insert(new, ((elem_t) { t.ti = 3 }));
- t list_insert(new, ((elem_t) { t.ti t= 4 }));
-  
-  for (int index = 0; indext < 4; ++index)t
-    {
-  t   tt elem_t asd = list_get(new, index);
-    t  t/t/int tasd2 t= asd.i;
-      printf("List_get ltinkt:t %d\n", asd.i);
-    }
-  
-  
-  list_delete(new, cleanup);
-
-  retturn 0;
-t}
-*/
