@@ -42,23 +42,26 @@ struct goods
 struct action
 {
   enum { NEW, NOTHING, ADD, REMOVE, EDIT } type;
-  union
-  {
-    struct { goods_t saved; shelf_t *saved_shelf; };      // REMOVE
-    struct { item_t *edited; item_t original; }; // EDIT
-  };
+  struct { goods_t saved; shelf_t *saved_shelf; };      // REMOVE
+  struct { item_t *edited; item_t original; }; // EDIT
 };
 
 void free_shelf(elem_t value)
 {
   shelf_t *shelf = value.p;
-  free(shelf->name);
-  free(shelf);
+  if (shelf)
+    {
+      free(shelf->name);
+      free(shelf);
+    }
 }
 
 void free_key(tree_key_t key)
 {
-  free(key.p);
+  if (key.p)
+    {
+      free(key.p);
+    }
 }
 
 /// Removes item along with all shelves
@@ -103,21 +106,19 @@ action_t *action_new()
 /// \param action action to remove
 void free_action(action_t *action)
 {
-  if (action->type == EDIT)
+  list_delete(action->original.shelves, true);
+
+  if (action->original.description != NULL)
     {
-      list_delete(action->original.shelves, true);
       free(action->original.description);
     }
-  else if (action->type == REMOVE)
+  
+  if (action->saved_shelf)
     {
-      tree_key_t key = { .p = action->saved.name };
-      elem_t item = { .p = action->saved.item };
-      free_key(key);
-      free_goods(item);
       free(action->saved_shelf->name);
       free(action->saved_shelf);
     }
-
+  
   free(action);
 }
 
@@ -208,7 +209,6 @@ void undo_action(tree_t *tree, action_t *action)
   else if (action->type == REMOVE)
     {
       tree_key_t key = { .p = action->saved.name };
-
       if (tree_has_key(tree, key))
 	{
 	  // Only a shelf was removed
@@ -418,14 +418,18 @@ void add_goods(tree_t *tree, action_t *action)
 	  while (!save)
 	    {
 	      char *shelf_name = ask_question_shelf("Hylla:");
-	      int amount = ask_question_int("Antal:");
 
-	      if (!item_has_shelf(item, shelf_name))
+	      if (shelf_exists(tree, shelf_name) && !item_has_shelf(item, shelf_name))
 		{
 		  puts("Hyllan tillhör inte varan");
 		}
-	      
-	      save = insert_shelf(tree, item, shelf_name, amount);
+	      else
+		{
+		  int amount = ask_question_int("Antal:");
+		  save = insert_shelf(tree, item, shelf_name, amount);
+		}
+
+	      free(shelf_name);
 	    }
 	}
       else
@@ -550,13 +554,16 @@ void remove_from_catalog(tree_t *tree, goods_t goods, action_t *action)
   elem_t *elem = NULL;
   tree_remove(tree, (tree_key_t)  { .p = goods.name }, elem); 
   action->type = REMOVE;
-  action->saved = goods;
 }
 
 void remove_goods(tree_t *tree, action_t *action)
 {
   goods_t selected = select_goods(tree);
+
+  if (selected.name == NULL) return;
+  
   int shelf_length = list_length(selected.item->shelves);
+  action->saved = selected;
 
   // If item has more than one shelf, individual shelf is removed
   if (shelf_length > 1)

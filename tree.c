@@ -245,22 +245,19 @@ bool traverse_tree(node_t *node, enum tree_order order, key_elem_apply_fun fun, 
   if (node != NULL)
     { 
       // PRE ORDER: handle node before both branches
-      if (order == preorder && fun(node->key, node->value, data) == false) return false;
+      if (order == preorder) fun(node->key, node->value, data);
 
       // traverse left branch
-      if (traverse_tree(node->left, order, fun, data) == false) return false;
+      traverse_tree(node->left, order, fun, data);
 
       // IN ORDER: handle node between left and right branches
-      if (order == inorder && fun(node->key, node->value, data)) return false;
+      if (order == inorder) fun(node->key, node->value, data);
 
       // traverse right branch
-      if (traverse_tree(node->right, order, fun, data) == false) return false;
+      traverse_tree(node->right, order, fun, data);
 
       // POST ORDER: handle node after both branches
-      if (order == postorder) return fun(node->key, node->value, data);
-
-      // order is wrong
-      return false;
+      if (order == postorder) fun(node->key, node->value, data);
     }
 
   return true;
@@ -449,15 +446,15 @@ bool balance_tree(tree_t *tree)
 bool tree_insert(tree_t *tree, tree_key_t key, elem_t value)
 {
   if (tree == NULL) return false;
-  
-  node_t *new = calloc(1, sizeof(node_t));
-  new->key = key;
-  new->value = value;
 
   node_t **leaf = search_tree(tree, key);
 
   if (*leaf == NULL)
     {
+      node_t *new = calloc(1, sizeof(node_t));
+      new->key = key;
+      new->value = value;
+      
       *leaf = new;
       ++tree->size;
       balance_tree(tree);
@@ -477,6 +474,7 @@ void remove_node(node_t **node)
   // 1. The node is a leaf, simply remove it
   if (is_leaf(*node))
     {
+      free(*node);
       *node = NULL;
     }
   // 2. Node has one child, replace it with that child
@@ -493,7 +491,7 @@ void remove_node(node_t **node)
 	  replacement = (*node)->right;
 	}
 
-      //free(*node);
+      free(*node);
       *node = replacement;
     }
   // 3. Node has two children, replace node with inorder successor in tree, remove successor

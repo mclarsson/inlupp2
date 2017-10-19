@@ -304,7 +304,7 @@ bool list_last(list_t *list, elem_t *result)
 
 
 
-bool list_apply(list_t *list, list_action2 fun, void *data)
+bool list_apply(list_t *list, elem_apply_fun fun, void *data)
 {
   link_t *cursor = list->first;
   while (cursor)

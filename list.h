@@ -10,9 +10,6 @@
 
 #include "common.h"
 
-/// This function is used in list_delete() to allow the lists which are
-/// the sole owners of their data to free the data on delete.
-typedef void(*list_action)(elem_t elem);
 
 /// Define struct list in your .c file not here! (why?)
 typedef struct list list_t;
@@ -133,16 +130,12 @@ void list_clear(list_t *list, bool delete);
 ///        NULL, no cleanup of keys or elements will happen.
 void list_delete(list_t *list, bool delete);
 
-/// This function is used in list_apply() to allow applying a function
-/// to all elements in a list
-typedef void(*list_action2)(elem_t elem, void *data);
-
 /// Applies a function to all elements in a list in list order
 ///
 /// \param list the list
 /// \param fun the function to apply to all elements
 /// \param data an extra argument passed to each call to fun (may be NULL)
-bool list_apply(list_t *list, list_action2 fun, void *data);
+bool list_apply(list_t *list, elem_apply_fun fun, void *data);
 
 
 int list_contains(list_t *list, elem_t elem);
