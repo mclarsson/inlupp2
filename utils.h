@@ -19,12 +19,39 @@ typedef answer_t(*convert_func)(char *);
 
 extern char *strdup(const char *);
 
-void clear_input_buffer();
-int read_string(char *buf, int buf_siz);
-bool is_number(char *str);
-bool is_float(char *str);
-answer_t make_float(char *);
+
+
+/// Checks if a string is empty or not
+///
+/// \param str string to be measured
+/// \returns: true if string is not empty, else false
 bool not_empty(char *str);
+
+
+/// Checks if a string is a float number
+///
+/// \param str string to be converted and checked
+/// \returns: true if string is a float number, else false
+bool is_float(char *str);
+
+
+/// Checks to see if a string is a number
+///
+/// \param str string to be checked
+/// \returns: true if the string is a number, else false
+bool is_number(char *str);
+
+
+/// Clears the current input buffer
+void clear_input_buffer();
+
+
+
+int read_string(char *buf, int buf_siz);
+
+
+answer_t make_float(char *);
+
 answer_t ask_question(char *question, check_func check, convert_func convert);
 char *ask_question_string(char *question);
 int ask_question_int(char *question);

@@ -2,21 +2,19 @@
 #include <assert.h>
 #include "utils.h"
 
-/**
- 
- * not_empty
- 
- */
+/// Checks if a string is empty or not
+///
+/// \param str string to be measured
+/// \returns: true if string is not empty, else false
 bool not_empty(char *str)
 {
   return strlen(str) > 0;
 }
 
-/**
- 
- * is_float
-
- */
+/// Checks if a string is a float number
+///
+/// \param str string to be converted and checked
+/// \returns: true if string is a float number, else false
 bool is_float(char *str)
 {
   int len = strlen(str);
@@ -44,11 +42,10 @@ bool is_float(char *str)
   return hasPoint;
 }
 
-/**
- 
- * is_number
- 
- */
+/// Checks to see if a string is a number
+///
+/// \param str string to be checked
+/// \returns: true if the string is a number, else false
 bool is_number(char *str) {
 
   int len = strlen(str);
@@ -70,11 +67,7 @@ bool is_number(char *str) {
   return true;
 }
 
-/**
- 
- * clear_input_buffer
- 
- */
+/// Clears the current input buffer
 void clear_input_buffer()
 {
   int c;
@@ -83,11 +76,12 @@ void clear_input_buffer()
   } while (c != '\n' && c != EOF);
 }
 
-/**
- 
- * read_string
- 
- */
+
+/// 
+///
+/// \param buf
+/// \param buf_siz
+/// \returns:
 int read_string(char *buf, int buf_siz)
 {
   assert(buf_siz > 0);
@@ -113,7 +107,7 @@ int read_string(char *buf, int buf_siz)
         }
     }
 
-  // String to long for buffer size
+  // String too long for buffer size
   if (i == max) {
     clear_input_buffer();
   }

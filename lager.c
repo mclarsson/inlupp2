@@ -33,6 +33,10 @@ void print_main_menu()
 }
 
 /// Compare function for two strings
+///
+/// \param e1 first string
+/// \param e2 second string
+/// \returns: a string comparison of the two strings
 int cmp_goods_names(tree_key_t e1, tree_key_t e2)
 {
   char *a = (char *) e1.p;
@@ -98,7 +102,8 @@ int event_loop()
 	  // Store on file
 	  save_catalog(catalog, save_file);
 	  close_file(save_file);
-	  
+
+          // Frees allocated memory
 	  tree_delete(catalog, true, true);
 	  free_action(act);
 	  exit_program();
