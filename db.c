@@ -49,21 +49,25 @@ struct action
   };
 };
 
-void free_shelf(list_value_t value)
+void free_shelf(elem_t value)
 {
   shelf_t *shelf = value.p;
   free(shelf->name);
   free(shelf);
 }
 
+void free_key(tree_key_t key)
+{
+  free(key.p);
+}
+
 /// Removes item along with all shelves
-void free_goods(tree_key_t key, tree_value_t value)
+void free_goods(elem_t value)
 {
   item_t *item = value.p;
   list_delete(item->shelves, true);
   free(item->description);
   free(item);
-  free(key.p);
 }
 
 /// Compare function for shelves
@@ -71,7 +75,7 @@ void free_goods(tree_key_t key, tree_value_t value)
 /// \param e1 first shelf
 /// \param e2 second shelf
 /// \returns: like strcmp
-int cmp_shelf_names(list_value_t e1, list_value_t e2)
+int cmp_shelf_names(elem_t e1, elem_t e2)
 {
   char *a = (char *) e1.p;
   char *b = (char *) e2.p;
@@ -85,6 +89,12 @@ action_t *action_new()
 {
   action_t *new = calloc(1, sizeof(action_t));
   new->type = NOTHING;
+  
+  element_free_fun remove = free_shelf;
+  element_comp_fun compare = cmp_shelf_names;
+  
+  new->original.shelves = list_new(NULL, remove, compare);
+  
   return new;
 }
 
@@ -98,15 +108,16 @@ void free_action(action_t *action)
       list_delete(action->original.shelves, true);
       free(action->original.description);
     }
-  else if (/*action->type == ADD || */action->type == REMOVE)
+  else if (action->type == REMOVE)
     {
       tree_key_t key = { .p = action->saved.name };
-      tree_value_t item = { .p = action->saved.item };
-      free_goods(key, item);
+      elem_t item = { .p = action->saved.item };
+      free_key(key);
+      free_goods(item);
       free(action->saved_shelf->name);
       free(action->saved_shelf);
     }
-    
+
   free(action);
 }
 
@@ -133,16 +144,16 @@ item_t *make_item(char *description, int price)
   item_t *new = calloc(1, sizeof(item_t));
   new->description = description;
   new->price = price;
-  list_clean_t *remove = calloc(1, sizeof(void *));
-  *remove = &free_shelf;
+  element_free_fun remove = free_shelf;
+  element_comp_fun compare = cmp_shelf_names;
   
-  new->shelves = list_new(NULL, (list_clean_t *) remove,(list_cmp_t *) &cmp_shelf_names);
+  new->shelves = list_new(NULL, remove, compare);
   return new;
 }
 
 
 
-goods_t *make_goods(char* name, item_t *item, list_value_t shelf)
+goods_t *make_goods(char* name, item_t *item, elem_t shelf)
 {
   goods_t *tmp = calloc(1, sizeof(goods_t));
   item->shelves = shelf.p;
@@ -159,7 +170,7 @@ goods_t *make_goods(char* name, item_t *item, list_value_t shelf)
 /// \param amount Amount of item on shelf
 void add_shelf(item_t *item, char *name, int amount)
 {
-  list_value_t new = { .p = make_shelf(name, amount) };
+  elem_t new = { .p = make_shelf(name, amount) };
   list_append(item->shelves, new);
 }
 
@@ -184,10 +195,10 @@ void undo_action(tree_t *tree, action_t *action)
       // Add saved shelves
       for (int i = 0; i < shelves_length; ++i)
 	{
-          list_value_t tmp = { .p = NULL };
+          elem_t tmp = { .p = NULL };
           list_get(action->original.shelves, i, &tmp);
           shelf_t *tmp_shelf = tmp.p;
-          list_value_t shelf = { .p = make_shelf(strdup(tmp_shelf->name), tmp_shelf->amount) };
+          elem_t shelf = { .p = make_shelf(strdup(tmp_shelf->name), tmp_shelf->amount) };
 	  list_append(action->edited->shelves, shelf); 
 	}
       
@@ -202,13 +213,13 @@ void undo_action(tree_t *tree, action_t *action)
 	{
 	  // Only a shelf was removed
 	  shelf_t *tmp = action->saved_shelf;
-	  list_value_t shelf = { .p = make_shelf(strdup(tmp->name), tmp->amount) };
+	  elem_t shelf = { .p = make_shelf(strdup(tmp->name), tmp->amount) };
 	  list_append(action->saved.item->shelves, shelf);
 	}
       else
 	{
 	  // Entire item was removed
-	  tree_value_t item = { .p = action->saved.item };
+	  elem_t item = { .p = action->saved.item };
 	  tree_insert(tree, key, item);
 	}
     }
@@ -239,7 +250,7 @@ void print_item(char *name, item_t *item)
   for (int i = 0; i < shelves_length; ++i)
     {
       puts("");
-      list_value_t tmp = { .p = NULL };
+      elem_t tmp = { .p = NULL };
       list_get(item->shelves, i, &tmp);
       shelf_t *tmp_shelf = tmp.p;
       output("Hylla", tmp_shelf->name);
@@ -255,7 +266,7 @@ shelf_t *get_item_shelf(item_t *item, char *shelf_name)
       
   for (int j = 0; j < shelf_length; ++j)
     {
-      list_value_t tmp = { .p = NULL };
+      elem_t tmp = { .p = NULL };
       list_get(item->shelves, j, &tmp);
       shelf_t *tmp_shelf = tmp.p;
       
@@ -280,7 +291,7 @@ bool item_has_shelf(item_t *item, char *shelf_name)
 /// \returns: true if shelf is already in use, else false
 bool shelf_exists(tree_t *tree, char *name)
 {
-  tree_value_t *items = tree_values(tree);
+  elem_t *items = tree_values(tree);
   int size = tree_size(tree);
   bool exists = false;
   
@@ -345,13 +356,13 @@ item_t *input_item(tree_t *tree)
   int price = ask_question_int("Pris:");
   
   item_t *item = make_item(description, price);
-  list_value_t shelf = { .p = input_shelf(tree) };
+  elem_t shelf = { .p = input_shelf(tree) };
   list_append(item->shelves, shelf);
   
   return item;
 }
 
-void insert_goods(tree_t *tree, tree_key_t key, tree_value_t item)
+void insert_goods(tree_t *tree, tree_key_t key, elem_t item)
 {
   tree_insert(tree, key, item);
 }
@@ -398,7 +409,9 @@ void add_goods(tree_t *tree, action_t *action)
 	{
 	  puts("Varan finns redan, lägger till ny hylla");
 	
-	  item_t *item = (item_t *) tree_get(tree, key).p;
+	  elem_t elem = { .p = NULL };
+	  tree_get(tree, key, &elem);
+	  item_t *item = elem.p;
 	  free(key.p);
 
 	  // Ask for shelfname until it's either new or if it already belongs to item
@@ -420,7 +433,7 @@ void add_goods(tree_t *tree, action_t *action)
 	  // Name not already in tree
 
 	  // Create item from inputs
-	  tree_value_t item = { .p = input_item(tree) };
+	  elem_t item = { .p = input_item(tree) };
 
 	  // Confirm item
 	  print_item(key.p, item.p);
@@ -436,7 +449,7 @@ void add_goods(tree_t *tree, action_t *action)
 	  else if (input == 'N')
 	    {
 	      // Free what is not to be saved
-              //list_value_t null = { .p = NULL };
+              //elem_t null = { .p = NULL };
 	      list_remove(((item_t *) item.p)->shelves, 0, true);
 	      free(((item_t *) item.p)->shelves);
 	      free(item.p);
@@ -487,7 +500,9 @@ goods_t select_goods(tree_t *tree)
 	  if (input_index > 0 && input_index <= max)
 	    {
 	      int item_index  = (input_index - 1) + (current_page - 1) * page_size;
-	      item_t *item = tree_get(tree, items[item_index]).p;
+	      elem_t elem = { .p = NULL };
+	      tree_get(tree, items[item_index], &elem);
+	      item_t *item = elem.p;
 	      char *name = items[item_index].p;
 	  
 	      free(input);
@@ -518,12 +533,12 @@ void remove_shelf(item_t *item, int index, action_t *action)
   if (index >= 0 && index < shelves_length)
     {
       // save removed shelf
-      list_value_t tmp = { .p = NULL };
+      elem_t tmp = { .p = NULL };
       list_get(item->shelves, index, &tmp);
       shelf_t *tmp_shelf = tmp.p;
       action->saved_shelf = make_shelf(strdup(tmp_shelf->name), tmp_shelf->amount);
       	  
-      //list_value_t val = { .p = NULL };
+      //elem_t val = { .p = NULL };
       list_remove(item->shelves, index, true);
       
       action->type = REMOVE;
@@ -532,7 +547,8 @@ void remove_shelf(item_t *item, int index, action_t *action)
 
 void remove_from_catalog(tree_t *tree, goods_t goods, action_t *action)
 {
-  tree_remove(tree, (tree_key_t)  { .p = goods.name } ); 
+  elem_t *elem = NULL;
+  tree_remove(tree, (tree_key_t)  { .p = goods.name }, elem); 
   action->type = REMOVE;
   action->saved = goods;
 }
@@ -548,7 +564,7 @@ void remove_goods(tree_t *tree, action_t *action)
       // List shelves
       for (int i = 1; i <= shelf_length; ++i)
 	{
-          list_value_t tmp = { .p = NULL };
+          elem_t tmp = { .p = NULL };
           list_get(selected.item->shelves, i-1, &tmp);
           shelf_t *tmp_shelf = tmp.p;
 	  printf("\n%d. %s (%d stycken)", i, tmp_shelf->name, tmp_shelf->amount);
@@ -608,21 +624,17 @@ void edit_goods(tree_t *tree, action_t *action)
   action->original.description = strdup(goods.item->description);
   action->original.price = goods.item->price;
 
-  list_clean_t *delete = calloc(1, sizeof(void *));
-  *delete = &free_shelf;
-  action->original.shelves = list_new(NULL, (list_clean_t *) delete,(list_cmp_t *) &cmp_shelf_names);
-
   // Clear copys shelves
-  list_clear(action->original.shelves, true);
+  list_clear(action->original.shelves, true); 
   
   // Copy shelves
   int shelves_length = list_length(shelves);
   for (int i = 0; i < shelves_length; i++)
     {
-      list_value_t tmp = { .p = NULL };
+      elem_t tmp = { .p = NULL };
       list_get(shelves, i, &tmp);
       shelf_t *tmp_shelf = tmp.p;
-      list_value_t tmpshelf = { .p = make_shelf(strdup(tmp_shelf->name), tmp_shelf->amount) };
+      elem_t tmpshelf = { .p = make_shelf(strdup(tmp_shelf->name), tmp_shelf->amount) };
       
       list_append(action->original.shelves, tmpshelf); 
     }
@@ -663,7 +675,7 @@ void edit_goods(tree_t *tree, action_t *action)
       
       for (int i = 0; i < shelves_length; ++i)
 	{
-          list_value_t tmp = { .p = NULL };
+          elem_t tmp = { .p = NULL };
           list_get(shelves, i, &tmp);
           shelf_t *tmp_shelf = tmp.p;
           printf("%d. Namn:  %s\n", i+1, tmp_shelf->name);
@@ -671,7 +683,7 @@ void edit_goods(tree_t *tree, action_t *action)
 
         }
       int index_shelf = ask_question_int("Vilken hylla vill du ändra?");
-      list_value_t tmp = { .p = NULL };
+      elem_t tmp = { .p = NULL };
       list_get(shelves, index_shelf, &tmp);
       shelf_t *tmp_shelf = tmp.p;
       tmp_shelf->name = ask_question_shelf("Ny hylla: ");
@@ -682,7 +694,7 @@ void edit_goods(tree_t *tree, action_t *action)
     case 'T':
       for (int i = 0; i < shelves_length; ++i)
 	{
-          list_value_t tmp = { .p = NULL };
+          elem_t tmp = { .p = NULL };
           list_get(shelves, i, &tmp);
           shelf_t *tmp_shelf = tmp.p;
           printf("%d. Namn:  %s\n", i+1, tmp_shelf->name);
@@ -691,7 +703,7 @@ void edit_goods(tree_t *tree, action_t *action)
         }
       int index_amount = ask_question_int("Vilket antal vill du ändra?");
 
-      list_value_t tmp_value = { .p = NULL };
+      elem_t tmp_value = { .p = NULL };
       list_get(shelves, index_amount, &tmp_value);
       shelf_t *tmp_amount = tmp.p;
       tmp_amount->amount = ask_question_int("Nytt antal: ");
@@ -709,7 +721,7 @@ void edit_goods(tree_t *tree, action_t *action)
 /// \param name name of item
 /// \param value tree value with item
 /// \param data pointer to file
-void store_item(tree_key_t name, tree_value_t value, void *data)
+bool store_item(tree_key_t name, elem_t value, void *data)
 {
   FILE *file = data;
   item_t *item = value.p;
@@ -733,7 +745,7 @@ void store_item(tree_key_t name, tree_value_t value, void *data)
   for (int i = 0; i < shelves_length; ++i)
     {
      
-      list_value_t tmp = { .p = NULL };
+      elem_t tmp = { .p = NULL };
       list_get(item->shelves, i, &tmp);
       shelf_t *tmp_shelf = tmp.p;
 
@@ -744,6 +756,8 @@ void store_item(tree_key_t name, tree_value_t value, void *data)
       // Amount
       store_int(file, tmp_shelf->amount);
     }
+
+  return true;
 }
 
 /// Save entire catalog to file
@@ -803,7 +817,7 @@ FILE *load_catalog(tree_t *catalog, char *name)
 	}
 
       tree_key_t key = { .p = name };
-      tree_value_t value = { .p = item };
+      elem_t value = { .p = item };
       tree_insert(catalog, key, value);
     }
 

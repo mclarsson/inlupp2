@@ -13,7 +13,10 @@ typedef struct node node_t;
 /// Struct for tree
 struct tree {
   node_t *top;
-  tree_cmp_t *cmp_f;
+  element_copy_fun cpy_f;
+  element_comp_fun cmp_f;
+  key_free_fun key_free_f;
+  element_free_fun elem_free_f;
   int size;
 };
 
@@ -21,7 +24,7 @@ struct tree {
 /// Node struct
 struct node {
   tree_key_t key;
-  tree_value_t value;
+  elem_t value;
   node_t *left;
   node_t *right;
 };
@@ -35,21 +38,27 @@ typedef struct {
   enum { KEYS, VALUES } type;
   union {
     tree_key_t *keys;
-    tree_value_t *values;
+    elem_t *values;
   };
 } node_clt;
 
 /// Creates a new tree
 ///
-/// \param cmp compare function for keys
+/// \param copy (may be NULL) a function applied to all elements when stored in the tree
+/// \param key_free (may be NULL) used to free keys in tree_delete
+/// \param elem_free (may be NULL) used to free elements in tree_delete
+/// \param compare (may be NULL) used to compare keys
 /// \returns: empty tree
-tree_t *tree_new(tree_cmp_t *cmp)
+tree_t *tree_new(element_copy_fun element_copy, key_free_fun key_free, element_free_fun elem_free, element_comp_fun compare)
 {
   tree_t *new = calloc(1, sizeof(tree_t));
 
-  if (new && cmp)
+  if (new)
     {
-      new->cmp_f = cmp;
+      new->cpy_f = element_copy;
+      new->cmp_f = compare;
+      new->key_free_f = key_free;
+      new->elem_free_f = elem_free;
     }
 
   return new;
@@ -81,33 +90,43 @@ int count_children(node_t *node)
 /// Frees node and subtrees
 ///
 /// \param node Node to start remove at
-void free_branches(node_t *node, tree_action cleanup)
+void free_branches(tree_t *tree, node_t *node, bool delete_keys, bool delete_elements)
 {
   if (node->left != NULL)
     {
-      free_branches(node->left, cleanup);
+      free_branches(tree, node->left, delete_keys, delete_elements);
     }
 
   if (node->right != NULL)
     {
-      free_branches(node->right, cleanup);
+      free_branches(tree, node->right, delete_keys, delete_elements);
     }
 
-  cleanup(node->key, node->value);
+  // Check which key free function to use
+  if (delete_keys && tree->key_free_f)
+    {
+      tree->key_free_f(node->key);
+    }
+
+  // Check which element free function to use
+  if (delete_elements && tree->elem_free_f)
+    {
+      tree->elem_free_f(node->value);
+    }
+  
   free(node);
 }
 
-/// Remove a tree along with all T elements.
+/// Remove a tree along with all elem_t elements.
 ///
 /// \param tree the tree
-/// \param cleanup a function that takes a key and element as
-///        argument, to be used to free memory. If this param is 
-///        NULL, no cleanup of keys or elements will happen.
-void tree_delete(tree_t *tree, tree_action cleanup)
+/// \param delete_keys if true, run tree's key_free function on all keys
+/// \param delete_elements if true, run tree's elem_free function on all elements
+void tree_delete(tree_t *tree, bool delete_keys, bool delete_elements)
 {
   if (tree->top != NULL)
     {
-      free_branches(tree->top, cleanup);
+      free_branches(tree, tree->top, delete_keys, delete_elements);
     }
 
   free(tree);
@@ -221,25 +240,30 @@ node_t **search_tree(tree_t *tree, tree_key_t key)
 /// \param order the order in which the elements will be visited
 /// \param fun the function to apply to all elements
 /// \param data an extra argument passed to each call to fun (may be NULL)
-void traverse_tree(node_t *node, enum tree_order order, tree_action2 fun, void *data)
+bool traverse_tree(node_t *node, enum tree_order order, key_elem_apply_fun fun, void *data)
 {
   if (node != NULL)
-    {
+    { 
       // PRE ORDER: handle node before both branches
-      if (order == preorder) fun(node->key, node->value, data);
+      if (order == preorder && fun(node->key, node->value, data) == false) return false;
 
       // traverse left branch
-      traverse_tree(node->left, order, fun, data);
+      if (traverse_tree(node->left, order, fun, data) == false) return false;
 
       // IN ORDER: handle node between left and right branches
-      if (order == inorder) fun(node->key, node->value, data);
+      if (order == inorder && fun(node->key, node->value, data)) return false;
 
       // traverse right branch
-      traverse_tree(node->right, order, fun, data);
+      if (traverse_tree(node->right, order, fun, data) == false) return false;
 
       // POST ORDER: handle node after both branches
-      if (order == postorder) fun(node->key, node->value, data);
+      if (order == postorder) return fun(node->key, node->value, data);
+
+      // order is wrong
+      return false;
     }
+
+  return true;
 }
 
 /// Applies a function to all elements in the tree in a specified order.
@@ -257,9 +281,9 @@ void traverse_tree(node_t *node, enum tree_order order, tree_action2 fun, void *
 /// \param order the order in which the elements will be visited
 /// \param fun the function to apply to all elements
 /// \param data an extra argument passed to each call to fun (may be NULL)
-void tree_apply(tree_t *tree, enum tree_order order, tree_action2 fun, void *data)
+bool tree_apply(tree_t *tree, enum tree_order order, key_elem_apply_fun fun, void *data)
 {
-  traverse_tree(tree->top, order, fun, data);
+  return traverse_tree(tree->top, order, fun, data);
 }
 
 /// Determine if a tree is balanced
@@ -422,7 +446,7 @@ bool balance_tree(tree_t *tree)
 /// \param key the key of element to be appended
 /// \param elem the element 
 /// \returns: true if successful, else false
-bool tree_insert(tree_t *tree, tree_key_t key, tree_value_t value)
+bool tree_insert(tree_t *tree, tree_key_t key, elem_t value)
 {
   if (tree == NULL) return false;
   
@@ -488,22 +512,23 @@ void remove_node(node_t **node)
     }
 }
 
-/// Removes node from tree
+/// Removes the element for a given key in tree.
 ///
 /// \param tree pointer to the tree
 /// \param key the key of elem to be removed
-/// \returns: the removed element
-tree_value_t tree_remove(tree_t *tree, tree_key_t key)
+/// \param result a pointer to where result can be stored (only defined when result is true)
+/// \returns: true if key is a key in the tree
+bool tree_remove(tree_t *tree, tree_key_t key, elem_t *result)
 {
   node_t **node = search_tree(tree, key);
 
-  if (*node == NULL) return (tree_value_t)  { .p = NULL};
+  if (*node == NULL) return false;
   
-  tree_value_t value = (*node)->value;
+  result = &(*node)->value;
   remove_node(node);
   --tree->size;
   balance_tree(tree);
-  return value;
+  return true;
 }
 
 /// Checks whether a key is used in a tree
@@ -522,18 +547,28 @@ bool tree_has_key(tree_t *tree, tree_key_t key)
 /// \param tree pointer to the tree
 /// \param key the key of elem to be removed
 /// \returns: true if key is a key in tree
-tree_value_t tree_get(tree_t *tree, tree_key_t key)
+bool tree_get(tree_t *tree, tree_key_t key, elem_t *result)
 {
-  return (*search_tree(tree, key))->value;
+  node_t **node = search_tree(tree, key);
+
+  if (*node == NULL)
+    {
+      return false;
+    }
+  else
+    {
+      *result = (*node)->value;
+      return true;
+    }
 }
 
-/// Adds key or elem to node_clt, tree_action2 for tree_elements
+/// Adds key or elem to node_clt, key_elem_apply_fun for tree_elements
 /// and tree_keys
 ///
 /// \param key key of node
 /// \param elem element of node
 /// \param data node_clt to add to
-void collect_nodes(tree_key_t key, tree_value_t value, void *data)
+bool collect_nodes(tree_key_t key, elem_t value, void *data)
 {
   node_clt *clt = data;
   
@@ -547,6 +582,7 @@ void collect_nodes(tree_key_t key, tree_value_t value, void *data)
     }
 
   clt->index++;
+  return true;
 }
 
 /// Returns an array holding all the elements in the tree
@@ -555,11 +591,11 @@ void collect_nodes(tree_key_t key, tree_value_t value, void *data)
 ///
 /// \param tree pointer to the tree
 /// \returns: array of tree_size() elements
-tree_value_t *tree_values(tree_t *tree)
+elem_t *tree_values(tree_t *tree)
 {
   assert(tree);
   int size = tree_size(tree);
-  tree_value_t *values = calloc(size, sizeof(tree_value_t));
+  elem_t *values = calloc(size, sizeof(elem_t));
   node_clt clt = { .index = 0, .type = VALUES, .values = values };
     
   if (size > 0)

@@ -6,21 +6,22 @@
 #include <string.h>
 #include "list.h"
 
+typedef struct link link_t;
 
 /// Struct for list
 struct list {
   link_t *first;
   link_t *last;
-  list_cmp_t *cmp_f;
-  list_copy_t *copy_f;
-  list_clean_t *clean_f;
+  element_comp_fun cmp_f;
+  element_copy_fun copy_f;
+  element_free_fun clean_f;
 };
 
 
 /// Struct for link-content
 struct link
 {
-  list_value_t value;
+  elem_t value;
   link_t *next;
   //cmp_t *cmp_f;
 };
@@ -29,7 +30,7 @@ struct link
 /// Allocates memory for/and creates a list
 ///
 /// \returns: empty list
-list_t *list_new(list_copy_t *copy_fun, list_clean_t *clean_fun, list_cmp_t *comp_fun)
+list_t *list_new(element_copy_fun copy_fun, element_free_fun clean_fun, element_comp_fun comp_fun)
 {
   list_t *new = calloc(1, sizeof(list_t));
   if (new)
@@ -48,7 +49,7 @@ list_t *list_new(list_copy_t *copy_fun, list_clean_t *clean_fun, list_cmp_t *com
 /// \param value of new element
 /// \param next next link in line
 /// \returns: link, part of a list
-link_t *link_new(list_value_t value, link_t *next)
+link_t *link_new(elem_t value, link_t *next)
 {
   link_t *new = calloc(1, sizeof(link_t));
 
@@ -67,7 +68,7 @@ link_t *link_new(list_value_t value, link_t *next)
 ///
 /// \param list list which is appended upon
 /// \param elem element that is added to the list
-void list_append(list_t *list, list_value_t elem)
+void list_append(list_t *list, elem_t elem)
 {
   link_t *new = link_new(elem, NULL);
   if (list->first == NULL)
@@ -89,7 +90,7 @@ void list_append(list_t *list, list_value_t elem)
 ///
 /// \param list list which is prepended upon
 /// \param elem element that is added to the list
-void list_prepend(list_t *list, list_value_t elem)
+void list_prepend(list_t *list, elem_t elem)
 {
   list->first = link_new(elem, list->first);
   if (list->last == NULL)
@@ -105,14 +106,21 @@ void list_prepend(list_t *list, list_value_t elem)
 /// \param list list that is searched for value
 /// \param index indicator for which element to return
 /// \returns: pointer to whatever value is stored at index
-void list_get(list_t *list, int index, list_value_t *result)
+bool list_get(list_t *list, int index, elem_t *result)
 {
   link_t *cursor = list->first;
-  for (int i = 0; cursor->next != NULL && i < index; i++)
+  int pos = index < 0 ? index + list_length(list) : index;
+
+  if (pos < 0 || pos > list_length(list)) return false;
+  
+  for (int i = 0; cursor->next != NULL && i < pos; i++)
     {
       cursor = cursor->next;
     }
+  
   *result = cursor->value;
+
+  return true;
 }
 
 
@@ -122,7 +130,7 @@ void list_get(list_t *list, int index, list_value_t *result)
 /// \param index point of the list where the element is added
 /// \param elem element to be added to list
 /// \returns: true if successful, else false
-void list_insert(list_t *list, int index,  list_value_t elem)
+void list_insert(list_t *list, int index,  elem_t elem)
 {
   
   // At the start of the list
@@ -268,18 +276,20 @@ void list_clear(list_t *list, bool delete)
 /// \param cleanup variable to clear all parts of a link
 void list_delete(list_t *list, bool delete)
 {
-  list_clear(list, delete);
-  free(list->clean_f);
-  free(list);
+  if (list != NULL)
+    {
+      list_clear(list, delete);
+      free(list);
+    }
 }
 
 
 /// Get the value of the first element in a list
 ///
 /// \param list the list
-void list_first(list_t *list, list_value_t *result)
+bool list_first(list_t *list, elem_t *result)
 {
-  list_get(list, 0, result);
+  return list_get(list, 0, result);
 }
 
 
@@ -287,9 +297,9 @@ void list_first(list_t *list, list_value_t *result)
 /// Get the value of the last element in a list
 ///
 /// \param list the list
-void list_last(list_t *list, list_value_t *result)
+bool list_last(list_t *list, elem_t *result)
 {
-  list_get(list, -1, result);
+  return list_get(list, -1, result);
 }
 
 
@@ -307,7 +317,7 @@ bool list_apply(list_t *list, list_action2 fun, void *data)
 }
 
 
-int list_contains(list_t *list, list_value_t elem)
+int list_contains(list_t *list, elem_t elem)
 {
   int i = 0;
   link_t *cursor = list->first;
@@ -321,43 +331,43 @@ int list_contains(list_t *list, list_value_t elem)
 
 
 /*
-int cmp_ex(list_value_t e1, list_value_t e2)
+intt cmp_ex(elem_t e1, elem_t e2)t
 {
-  return e1.i < e2.i ? -1 : e1.i == e2.i ? 0 : 1;
+  return e1.i < et2.i ? -1 : et1.i ==t e2.i ? 0 : 1;
 }
 
 
 
 int main(int argc, char *argv[])
 {
-  cmp_t cmp = &cmp_ex;
-  list_t *new = list_new(&cmp);
+  ttcmp_t cmp = &cmp_ex;
+  list_t *new = list_ttnew(&cmp);
   //int length = 100;
-  for (int index = 0; index < length; ++index)
+  for (int index = 0; ttindex < length; ++index)
     {
       //printf("Link: %d\n", i);
       //int a = index;
-      // list_value_t e;
+      // elem_t e;
       //e.i = a;
       
-      list_insert(new, &((list_value_t) { .i = index }));
+      list_insert(new, t&((elem_t) { .i = index }));
     }
   
-  list_insert(new, ((list_value_t) { .i = 1 }));
-  list_insert(new, ((list_value_t) { .i = 2 }));
-  list_insert(new, ((list_value_t) { .i = 3 }));
-  list_insert(new, ((list_value_t) { .i = 4 }));
+  list_insert(new, ((elem_t) { t.ti = 1 }));
+  list_insert(new, ((elem_t) { t.i t= 2 }));
+  list_insert(new, ((elem_t) { t.ti = 3 }));
+ t list_insert(new, ((elem_t) { t.ti t= 4 }));
   
-  for (int index = 0; index < 4; ++index)
+  for (int index = 0; indext < 4; ++index)t
     {
-      list_value_t asd = list_get(new, index);
-      //int asd2 = asd.i;
-      printf("List_get link: %d\n", asd.i);
+  t   tt elem_t asd = list_get(new, index);
+    t  t/t/int tasd2 t= asd.i;
+      printf("List_get ltinkt:t %d\n", asd.i);
     }
   
   
   list_delete(new, cleanup);
 
-  return 0;
-}
+  retturn 0;
+t}
 */

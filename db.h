@@ -39,7 +39,9 @@ item_t *make_item(char *description, int price);
 void add_shelf(item_t *item, char *name, int amount);
 */
 
-void free_goods(tree_key_t key, tree_value_t item);
+void free_goods(elem_t value);
+
+void free_key(tree_key_t key);
 
 /// Creates new items
 ///

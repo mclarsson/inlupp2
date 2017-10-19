@@ -44,10 +44,13 @@ int cmp_goods_names(tree_key_t e1, tree_key_t e2)
 ///
 int event_loop()
 {
-  tree_cmp_t *cmp = calloc(1, sizeof(tree_cmp_t));
-  *cmp = &cmp_goods_names;
+  //tree_cmp_t *cmp = calloc(1, sizeof(tree_cmp_t));
+  //*cmp = &cmp_goods_names;
+  element_comp_fun cmp = cmp_goods_names;
+  element_free_fun e_free = free_goods;
+  key_free_fun k_free = free_key;
   
-  tree_t *catalog = tree_new(cmp);
+  tree_t *catalog = tree_new(NULL, k_free, e_free, cmp);
   action_t *act = action_new();
 
   FILE  *save_file = load_catalog(catalog, "save_file");
@@ -96,8 +99,7 @@ int event_loop()
 	  save_catalog(catalog, save_file);
 	  close_file(save_file);
 	  
-	  free(cmp);
-	  tree_delete(catalog, &free_goods);
+	  tree_delete(catalog, true, true);
 	  free_action(act);
 	  exit_program();
 	  break;

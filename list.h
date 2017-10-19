@@ -8,29 +8,14 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-typedef union list_value list_value_t;
-
-union list_value
-{
-  void *p;
-  int   i;
-  uint  u;
-  float f;
-};
-
-typedef int(*list_cmp_t)(list_value_t, list_value_t);
-
-typedef list_value_t(*list_copy_t)(list_value_t);
-
-typedef void(*list_clean_t)(list_value_t);
+#include "common.h"
 
 /// This function is used in list_delete() to allow the lists which are
 /// the sole owners of their data to free the data on delete.
-typedef void(*list_action)(list_value_t elem);
+typedef void(*list_action)(elem_t elem);
 
 /// Define struct list in your .c file not here! (why?)
 typedef struct list list_t;
-typedef struct link link_t;
 
 /// \file list.h
 ///
@@ -48,7 +33,7 @@ typedef struct link link_t;
 ///
 /// \param cmp_f compare function
 /// \returns: empty list
-list_t *list_new(list_copy_t *, list_clean_t*, list_cmp_t *);
+list_t *list_new(element_copy_fun copy_fun, element_free_fun clean_fun, element_comp_fun comp_fun);
 
 
 
@@ -56,13 +41,13 @@ list_t *list_new(list_copy_t *, list_clean_t*, list_cmp_t *);
 ///
 /// \param list pointer to the list
 /// \param elem the element to be appended
-void list_append(list_t *list, list_value_t elem);
+void list_append(list_t *list, elem_t elem);
 
 /// Inserts a new element at the beginning of the list
 ///
 /// \param list pointer to the list
 /// \param elem the element to be prepended
-void list_prepend(list_t *list, list_value_t elem);
+void list_prepend(list_t *list, elem_t elem);
 
 /// Inserts a new element at a given index. 
 ///
@@ -91,7 +76,7 @@ void list_prepend(list_t *list, list_value_t elem);
 /// \param index the index for elem to be inserted at
 /// \param elem  the element to be inserted
 /// \returns true if succeeded, else false
-void list_insert(list_t *list, int index, list_value_t elem);
+void list_insert(list_t *list, int index, elem_t elem);
 
 /// Removes an element from a list.
 ///
@@ -111,13 +96,13 @@ void list_remove(list_t *list, int index, bool delete);
 /// \param list  pointer to the list
 /// \param index the index to be returned
 /// \returns a pointer to the element at index index
-void list_get(list_t *list, int index, list_value_t *result);
+bool list_get(list_t *list, int index, elem_t *result);
 
 /// A convenience for list_get(list, 0)
-void list_first(list_t *list, list_value_t *result);
+bool list_first(list_t *list, elem_t *result);
 
 /// A convenience for list_get(list, -1)
-void list_last(list_t *list, list_value_t *result);
+bool list_last(list_t *list, elem_t *result);
 
 /// Returns the length of the list. It is undefined
 /// whether the length is calculated in O(n) time or
@@ -150,7 +135,7 @@ void list_delete(list_t *list, bool delete);
 
 /// This function is used in list_apply() to allow applying a function
 /// to all elements in a list
-typedef void(*list_action2)(list_value_t elem, void *data);
+typedef void(*list_action2)(elem_t elem, void *data);
 
 /// Applies a function to all elements in a list in list order
 ///
@@ -160,7 +145,7 @@ typedef void(*list_action2)(list_value_t elem, void *data);
 bool list_apply(list_t *list, list_action2 fun, void *data);
 
 
-int list_contains(list_t *list, list_value_t elem);
+int list_contains(list_t *list, elem_t elem);
 
 
 #endif
