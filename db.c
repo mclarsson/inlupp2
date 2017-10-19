@@ -225,16 +225,6 @@ void undo_action(tree_t *tree, action_t *action)
   action->type = NOTHING;
 }
 
-/// Checks to see if the two keys are the same
-///
-/// \param s1 string one
-/// \param s2 string two
-/// \returns: true if they are the same, else false
-bool is(char *s1, char *s2)
-{
-  return strcmp(s1, s2) == 0;
-}
-
 /// Prints name and item
 ///
 /// \param name name of ware
@@ -486,31 +476,35 @@ goods_t select_goods(tree_t *tree)
 	  printf("%d.\t%s\n", k, (char *)items[index].p);
 	}
 
-      char *input = ask_menu_option("\nVälj vara [1-20], [n]ästa sida eller [a]vbryt");
+      char *input = ask_question_string("\nVälj vara [nummer], [n]ästa sida eller [a]vbryt");
 	
       if (is_number(input))
 	{
 	  // User selected a goods
 	  
 	  int input_index = atoi(input);
-	    
-	  int item_index  = (input_index - 1) + (current_page - 1) * page_size;
-	  item_t *item = tree_get(tree, items[item_index]).p;
-	  char *name = items[item_index].p;
+
+	  if (input_index > 0 && input_index <= max)
+	    {
+	      int item_index  = (input_index - 1) + (current_page - 1) * page_size;
+	      item_t *item = tree_get(tree, items[item_index]).p;
+	      char *name = items[item_index].p;
 	  
-	  free(input);
-	  free(items);
-	  return (goods_t) { .name = name, .item = item };
+	      free(input);
+	      free(items);
+	      return (goods_t) { .name = name, .item = item };
+	    }
 	}
-      else if (is(input, "A"))
+      else if (strcmp(input, "a") == 0)
 	{
-	  free(input);
 	  view_next = false;
 	}
-      else if(is(input, "N"))
+      else if(strcmp(input, "n") == 0)
 	{
 	  ++current_page;
 	}
+      
+      free(input);
     }
   
 
