@@ -1,5 +1,3 @@
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -89,14 +87,18 @@ int count_children(node_t *node)
 
 /// Frees node and subtrees
 ///
+/// \param tree the tree
 /// \param node Node to start remove at
+/// \param delete_keys if true, run tree's key_free function on all keys
+/// \param delete_elements if true, run tree's elem_free function on all elements
 void free_branches(tree_t *tree, node_t *node, bool delete_keys, bool delete_elements)
 {
+  // Frees the left branch of the tree
   if (node->left != NULL)
     {
       free_branches(tree, node->left, delete_keys, delete_elements);
     }
-
+  // Frees the right branch of the tree
   if (node->right != NULL)
     {
       free_branches(tree, node->right, delete_keys, delete_elements);
@@ -132,8 +134,9 @@ void tree_delete(tree_t *tree, bool delete_keys, bool delete_elements)
   free(tree);
 }
 
-/// Get the size of the tree 
+/// Gets the size of the tree 
 ///
+/// \param tree the tree
 /// \returns: the number of nodes in the tree
 int tree_size(tree_t *tree)
 {
@@ -144,7 +147,7 @@ int tree_size(tree_t *tree)
 ///
 /// \param a First number
 /// \param b Second number
-/// \returns Biggest number
+/// \returns: Biggest number
 int max(int a, int b)
 {
   return a > b ? a : b;
@@ -153,7 +156,7 @@ int max(int a, int b)
 /// Count max node depth
 ///
 /// \param node current node
-/// \returns depth of tree
+/// \returns: greatest depth of tree
 int count_depth(node_t *node)
 {
   if (node == NULL)
@@ -187,7 +190,7 @@ int tree_depth(tree_t *tree)
 /// \param tree associated tree with compare function
 /// \param node key of node
 /// \param key key to compare with
-/// \returns direction to move in
+/// \returns: direction to move in, in the form of an enumerate
 enum key_compare compare_keys(tree_t *tree, tree_key_t node_key, tree_key_t cmp_key)
 {  
   int a = (*tree->cmp_f)(node_key, cmp_key);
@@ -202,7 +205,7 @@ enum key_compare compare_keys(tree_t *tree, tree_key_t node_key, tree_key_t cmp_
 ///
 /// \param tree tree to search in
 /// \param key key to search tree for
-/// \returns double pointer to correct position
+/// \returns: double pointer to correct position
 node_t **search_tree(tree_t *tree, tree_key_t key)
 {
   node_t **node = &(tree->top);
@@ -286,12 +289,13 @@ bool tree_apply(tree_t *tree, enum tree_order order, key_elem_apply_fun fun, voi
 /// Determine if a tree is balanced
 ///
 /// \param tree tree to check
-/// \return true if tree is balanced, otherwise false
+/// \returns: true if tree is balanced, otherwise false
 bool check_balanced(tree_t *tree)
 {
   // Empty tree is balanced
   if (tree->top == NULL) return true;
-  
+
+  // Checks to see the balance of each node
   int left_depth = count_depth(tree->top->left);
   int right_depth = count_depth(tree->top->right);
   int balance_factor = abs(left_depth - right_depth);
@@ -302,7 +306,7 @@ bool check_balanced(tree_t *tree)
 /// Rotates nodes according to AVL right rotation
 ///
 /// \param A top node
-/// \returns new top node
+/// \returns: new top node
 node_t *avl_rotate_left(node_t *A)
 {
   node_t *B = A->right;
@@ -317,7 +321,7 @@ node_t *avl_rotate_left(node_t *A)
 /// Rotates nodes according to AVL right rotation
 ///
 /// \param C top node
-/// \returns new top node
+/// \returns: new top node
 node_t *avl_rotate_right(node_t *C)
 {
   node_t *B = C->left;
@@ -332,7 +336,7 @@ node_t *avl_rotate_right(node_t *C)
 /// Rotates nodes according to AVL left-right rotation
 ///
 /// \param C top node
-/// \returns new top node
+/// \returns: new top node
 node_t *avl_rotate_left_right(node_t *C)
 {
   node_t *A = C->left;
@@ -350,7 +354,7 @@ node_t *avl_rotate_left_right(node_t *C)
 /// Rotates nodes according to AVL right-left rotation
 ///
 /// \param C top node
-/// \returns new top node
+/// \returns: new top node
 node_t *avl_rotate_right_left(node_t *A)
 {
   node_t *C = A->right;
@@ -369,7 +373,7 @@ node_t *avl_rotate_right_left(node_t *A)
 ///
 /// \param tree tree that is being balanced
 /// \param node top node of current subtree
-/// \returns top node in balanced subtree
+/// \returns: top node in balanced subtree
 node_t *balance_subtree(tree_t *tree, node_t *node)
 { 
   // Balance subtrees
@@ -417,7 +421,7 @@ node_t *balance_subtree(tree_t *tree, node_t *node)
 /// Balances a tree.
 ///
 /// \param tree tree to be balanced
-/// \returns if balancing was succesful
+/// \returns: if balancing was succesful
 bool balance_tree(tree_t *tree)
 {
   node_t *top = tree->top;
@@ -468,6 +472,8 @@ bool tree_insert(tree_t *tree, tree_key_t key, elem_t value)
 }
 
 /// Removes node
+///
+/// \param node the node to be removed
 void remove_node(node_t **node)
 {
   // Three possibilities arise when deleting a node
@@ -589,7 +595,7 @@ bool collect_nodes(tree_key_t key, elem_t value, void *data)
 ///
 /// \param tree pointer to the tree
 /// \returns: array of tree_size() elements
-elem_t *tree_values(tree_t *tree)
+elem_t *tree_elements(tree_t *tree)
 {
   assert(tree);
   int size = tree_size(tree);

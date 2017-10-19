@@ -291,7 +291,7 @@ bool item_has_shelf(item_t *item, char *shelf_name)
 /// \returns: true if shelf is already in use, else false
 bool shelf_exists(tree_t *tree, char *name)
 {
-  elem_t *items = tree_values(tree);
+  elem_t *items = tree_elements(tree);
   int size = tree_size(tree);
   bool exists = false;
   

@@ -9,8 +9,10 @@
 typedef elem_t tree_key_t;
 typedef element_free_fun key_free_fun;
 
-/// Define struct tree in your .c file not here! (why?)
+// Struct for the tree
 typedef struct tree tree_t;
+
+
 
 /// Creates a new tree
 ///
@@ -21,6 +23,8 @@ typedef struct tree tree_t;
 /// \returns: empty tree
 tree_t *tree_new(element_copy_fun element_copy, key_free_fun key_free, element_free_fun elem_free, element_comp_fun compare);
 
+
+
 /// Remove a tree along with all elem_t elements.
 ///
 /// \param tree the tree
@@ -28,15 +32,21 @@ tree_t *tree_new(element_copy_fun element_copy, key_free_fun key_free, element_f
 /// \param delete_elements if true, run tree's elem_free function on all elements
 void tree_delete(tree_t *tree, bool delete_keys, bool delete_elements);
 
+
+
 /// Get the size of the tree 
 ///
 /// \returns: the number of nodes in the tree
 int tree_size(tree_t *tree);
 
+
+
 /// Get the depth of the tree 
 ///
 /// \returns: the depth of the deepest subtree
 int tree_depth(tree_t *tree);
+
+
 
 /// Insert element into the tree. Returns false if the key is already used.
 ///
@@ -46,12 +56,15 @@ int tree_depth(tree_t *tree);
 /// \returns: true if successful, else false
 bool tree_insert(tree_t *tree, tree_key_t key, elem_t value);
 
+
+
 /// Checks whether a key is used in a tree
 ///
 /// \param tree pointer to the tree
 /// \param key the key to check for inclusion in the tree
 /// \returns: true if key is a key in the tree
 bool tree_has_key(tree_t *tree, tree_key_t key);
+
 
 
 /// Finds the element for a given key in tree.
@@ -62,6 +75,8 @@ bool tree_has_key(tree_t *tree, tree_key_t key);
 /// \returns: true if key is a key in the tree
 bool tree_get(tree_t *tree, tree_key_t key, elem_t *result);
 
+
+
 /// Removes the element for a given key in tree.
 ///
 /// \param tree pointer to the tree
@@ -69,6 +84,8 @@ bool tree_get(tree_t *tree, tree_key_t key, elem_t *result);
 /// \param result a pointer to where result can be stored (only defined when result is true)
 /// \returns: true if key is a key in the tree
 bool tree_remove(tree_t *tree, tree_key_t key, elem_t *result);
+
+
 
 /// Swap the element for a given key for another.
 ///
@@ -82,6 +99,7 @@ bool tree_remove(tree_t *tree, tree_key_t key, elem_t *result);
                   tmp; })                       \
 
 
+
 /// Returns an array holding all the keys in the tree
 /// in ascending order.
 ///
@@ -89,18 +107,23 @@ bool tree_remove(tree_t *tree, tree_key_t key, elem_t *result);
 /// \returns: array of tree_size() keys
 tree_key_t *tree_keys(tree_t *tree);
 
+
+
 /// Returns an array holding all the elements in the tree
 /// in ascending order of their keys (which are not part
 /// of the value).
 ///
 /// \param tree pointer to the tree
 /// \returns: array of tree_size() elements
-elem_t *tree_values(tree_t *tree);
+elem_t *tree_elements(tree_t *tree);
+
 
 
 /// This function is used in tree_apply() to allow applying a function
 /// to all elements in a tree. 
 typedef bool(*key_elem_apply_fun)(tree_key_t key, elem_t elem, void *data);
+
+
 
 enum tree_order { inorder = 0, preorder = -1, postorder = 1 };
 
