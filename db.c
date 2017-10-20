@@ -120,8 +120,7 @@ void free_action(action_t *action)
   
   if (action->saved_shelf != NULL)
     {
-      free(action->saved_shelf->name);
-      free(action->saved_shelf);
+      free_shelf((elem_t) { .p = action->saved_shelf });
     }
   
   free(action);
@@ -626,7 +625,7 @@ void remove_goods(tree_t *tree, action_t *action)
   if (selected.name == NULL) return;
 
   // Free currently saved goods
-  if (action->saved.item != NULL && action->saved.name != NULL)
+  if (action->saved.item != NULL && action->saved.name != NULL && strcmp(selected.name, action->saved.name))
     {
       free_goods((elem_t) { .p = action->saved.item });
       free_key((tree_key_t) { .p = action->saved.name });
@@ -672,6 +671,8 @@ void remove_goods(tree_t *tree, action_t *action)
 /// \param tree tree to be displayed
 void list_goods(tree_t *tree)
 {
+  if (tree_size(tree) == 0) puts("\nFinns inget att visa");
+  
   bool stop = false;
   do {
     goods_t selected = select_goods(tree);
@@ -682,7 +683,6 @@ void list_goods(tree_t *tree)
       }
     else
       {
-        puts("Finns inget att visa!");
 	stop = true;
       }
   } while (!stop);
