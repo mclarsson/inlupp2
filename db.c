@@ -558,6 +558,10 @@ goods_t select_goods(tree_t *tree)
 	      free(items);
 	      return (goods_t) { .name = name, .item = item };
 	    }
+	  else
+	    {
+	      index -= max;
+	    }
 	}
       else if (strcmp(input, "a") == 0)
 	{
