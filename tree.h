@@ -32,7 +32,11 @@ tree_t *tree_new(element_copy_fun element_copy, key_free_fun key_free, element_f
 /// \param delete_elements if true, run tree's elem_free function on all elements
 void tree_delete(tree_t *tree, bool delete_keys, bool delete_elements);
 
-
+/// Determine if a tree is balanced
+///
+/// \param tree tree to check
+/// \returns: true if tree is balanced, otherwise false
+bool check_balanced(tree_t *tree);
 
 /// Get the size of the tree 
 ///

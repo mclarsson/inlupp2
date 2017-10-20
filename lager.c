@@ -28,6 +28,7 @@ void print_main_menu()
   fputs("[R]edigera en vara\n", stdout);
   fputs("Ån[g]ra senaste ändringen\n", stdout);
   fputs("Lista [h]ela varukatalogen\n", stdout);
+  fputs("[K]ontrollera databasens sortering\n", stdout);
   fputs("[A]vsluta\n", stdout);
   fputs("\n", stdout);
 }
@@ -67,7 +68,7 @@ int event_loop()
   while (true)
     {
       print_main_menu();
-      input = ask_question_char_in_str(" > ", "LHTRGA");
+      input = ask_question_char_in_str(" > ", "LHTRGKA");
 
       switch (input)
 	{
@@ -94,6 +95,17 @@ int event_loop()
 	case 'G':
 	  //undo
 	  undo_action(catalog, act);
+	  break;
+
+	case 'K':
+	  if (check_balanced(catalog))
+	    {
+	      puts("\nTrädet är balanserat");
+	    }
+	  else
+	    {
+	      puts("\nTrädet är inte balanserat");
+	    }
 	  break;
 	         	  
 	case 'A':
