@@ -577,17 +577,40 @@ goods_t select_goods(tree_t *tree)
 }
 
 
+void action_set_saved(action_t *action, goods_t goods)
+{
+  // Free currently saved goods
+  if (action->saved.item != NULL && action->saved.name != NULL && strcmp(goods.name, action->saved.name))
+    {
+      free_goods((elem_t) { .p = action->saved.item });
+      free_key((tree_key_t) { .p = action->saved.name });
+      action->saved.item = NULL;
+      action->saved.name = NULL;
+    }
+  
+  // Free current saved shelf
+  if (action->saved_shelf != NULL)
+    {
+      free_shelf((elem_t) { .p = action->saved_shelf });
+      action->saved_shelf = NULL;
+    }
+
+  action->saved = goods;
+}
+
 /// Removes a shelf from an item
 ///
-/// \param item the item
+/// \param goods goods with item
 /// \param index the index of the desired shelf
 /// \param action replaces the previous action with a new one
-void remove_shelf(item_t *item, int index, action_t *action)
+void remove_shelf(goods_t goods, int index, action_t *action)
 {
+  item_t *item = goods.item;
   int shelves_length = list_length(item->shelves);
   if (index >= 0 && index < shelves_length)
     {
-      
+      action_set_saved(action, goods);
+  
       // save removed shelf
       elem_t tmp = { .p = NULL };
       list_get(item->shelves, index, &tmp);
@@ -600,7 +623,6 @@ void remove_shelf(item_t *item, int index, action_t *action)
     }
 }
 
-
 /// Removes a goods from tree catalog
 ///
 /// \param tree the tree
@@ -608,6 +630,7 @@ void remove_shelf(item_t *item, int index, action_t *action)
 /// \param action replaces the previous action with a new one
 void remove_from_catalog(tree_t *tree, goods_t goods, action_t *action)
 {
+  action_set_saved(action, goods);
   elem_t elem = { .p = NULL };
   tree_remove(tree, (tree_key_t)  { .p = goods.name }, &elem); 
   action->type = REMOVE;
@@ -624,24 +647,6 @@ void remove_goods(tree_t *tree, action_t *action)
 
   if (selected.name == NULL) return;
 
-  // Free currently saved goods
-  if (action->saved.item != NULL && action->saved.name != NULL && strcmp(selected.name, action->saved.name))
-    {
-      free_goods((elem_t) { .p = action->saved.item });
-      free_key((tree_key_t) { .p = action->saved.name });
-      action->saved.item = NULL;
-      action->saved.name = NULL;
-    }
-  
-  // Free current saved shelf
-  if (action->saved_shelf != NULL)
-    {
-      free_shelf((elem_t) { .p = action->saved_shelf });
-      action->saved_shelf = NULL;
-    }
-
-  action->saved = selected;
-  
   int shelf_length = list_length(selected.item->shelves);
 
   // If item has more than one shelf, individual shelf is removed
@@ -658,7 +663,7 @@ void remove_goods(tree_t *tree, action_t *action)
 
       int index = ask_question_int("\n\nVilken plats skall tas bort (0 för ingen)?") - 1;
 
-      remove_shelf(selected.item, index, action);
+      remove_shelf(selected, index, action);
     }
   else
     {

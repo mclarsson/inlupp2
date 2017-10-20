@@ -204,12 +204,13 @@ goods_t select_goods(tree_t *tree);
 
 
 
+
 /// Removes a shelf from an item
 ///
-/// \param item the item
+/// \param goods goods with item
 /// \param index the index of the desired shelf
 /// \param action replaces the previous action with a new one
-void remove_shelf(item_t *item, int index, action_t *action);
+void remove_shelf(goods_t goods, int index, action_t *action);
 
 
 
