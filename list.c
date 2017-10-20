@@ -165,17 +165,18 @@ void list_insert(list_t *list, int index,  elem_t elem)
     {
       puts("Not a valid index.\n");
     }
-
-  link_t *cursor = list->first;
-  for (int i = 0; cursor != NULL && i < index-1; ++i)
+  else
     {
-      cursor = cursor->next;
-    }
+      link_t *cursor = list->first;
+      for (int i = 0; cursor != NULL && i < index-1; ++i)
+	{
+	  cursor = cursor->next;
+	}
   
-  link_t *tmp = cursor->next;
-  link_t *new_link = link_new(elem, tmp);
-  cursor->next = new_link;
-
+      link_t *tmp = cursor->next;
+      link_t *new_link = link_new(elem, tmp);
+      cursor->next = new_link;
+    }
 }
 
 

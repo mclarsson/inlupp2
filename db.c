@@ -632,7 +632,7 @@ void remove_from_catalog(tree_t *tree, goods_t goods, action_t *action)
 {
   action_set_saved(action, goods);
   elem_t elem = { .p = NULL };
-  tree_remove(tree, (tree_key_t)  { .p = goods.name }, &elem); 
+  tree_remove(tree, (tree_key_t)  { .p = goods.name }, &elem);
   action->type = REMOVE;
 }
 

@@ -99,7 +99,7 @@ void test_list_append(void)
     {
       elem_t tmp = { .p = name[i] };
       list_append(list, tmp);
-      CU_ASSERT(list_length(list) == i);
+      CU_ASSERT(list_length(list) == i + 1);
     }
 }
 
@@ -122,7 +122,7 @@ void test_list_prepend(void)
     {
       elem_t tmp = { .p = name[i] };
       list_prepend(list, tmp);
-      CU_ASSERT_TRUE(list_length(list) == i);
+      CU_ASSERT_TRUE(list_length(list) == i + 1);
     } 
 }
 
@@ -144,7 +144,7 @@ void test_list_insert(void)
     {
       elem_t tmp = { .p = name[i] };
       list_insert(list, i, tmp);
-      CU_ASSERT_TRUE(list_length(list) == i);
+      CU_ASSERT_TRUE(list_length(list) == i + 1);
     }
 }
 
@@ -153,8 +153,8 @@ list_t *tmp_list_insert(void)
   list_t *list = list_new(NULL, NULL, NULL);
   for (int i = 0; i < 10 ; i++)
     {
-      elem_t tmp = { .p = name[i] };
-      list_insert(list, 0, tmp);
+      elem_t tmp = { .p = strdup(name[i]) };
+      list_insert(list, i, tmp);
     }
   return list;
 }
@@ -184,7 +184,7 @@ void test_list_get(void)
   {
     elem_t tmp2 = { .p = NULL };
     list_get(listprepend, i, &tmp2);
-    CU_ASSERT_TRUE( strcmp(name[i], tmp2.p ) == 0);
+    CU_ASSERT_TRUE( strcmp(name[9 - i], tmp2.p ) == 0);
   }
 
   list_t * listinsert = tmp_list_insert();
@@ -200,13 +200,13 @@ void test_list_get(void)
 void test_list_remove(void)
 {
   list_t *list = tmp_list_append();
-  list_remove(list, 0, true);
+  list_remove(list, 0, false);
   CU_ASSERT_TRUE( list_length(list) == 9);
-  list_remove(list, 1, true);
+  list_remove(list, 1, false);
   CU_ASSERT_TRUE( list_length(list) == 8);
-  list_remove(list, 2, true);
+  list_remove(list, 2, false);
   CU_ASSERT_TRUE( list_length(list) == 7);
-  list_remove(list, 3, true);
+  list_remove(list, 3, false);
   CU_ASSERT_TRUE( list_length(list) == 6);
 }
 
@@ -215,8 +215,8 @@ void test_list_remove(void)
 void test_list_delete(void)
 {
   list_t *list = tmp_list_append();
-  list_delete(list, true);
-  CU_ASSERT_FALSE(list);
+  list_delete(list, false);
+  CU_ASSERT_TRUE(list != NULL);
 }
 
 
@@ -250,9 +250,14 @@ void test_list_last(void)
 //--------------------------------------------------------------------------------------------
 // Tree
 
+int tree_cmp(elem_t a, elem_t b)
+{
+  return strcmp(a.p, b.p);
+}
+
 void test_tree_new(void)
 {
-  tree_t *tree = tree_new(NULL, NULL, NULL, NULL);
+  tree_t *tree = tree_new(NULL, NULL, NULL, (element_comp_fun) tree_cmp);
   for (int i = 0; i < 10; i++)
     {
       tree_key_t tmpkey = { .p = name[i] };
@@ -263,7 +268,7 @@ void test_tree_new(void)
 
 tree_t *tmp_tree_new(void)
 {
-  tree_t *tree = tree_new(NULL, NULL, NULL, NULL);
+  tree_t *tree = tree_new(NULL, NULL, NULL, (element_comp_fun) tree_cmp);
   for (int i = 0; i < 10; i++)
     {
       tree_key_t tmpkey = { .p = name[i] };
@@ -278,9 +283,8 @@ tree_t *tmp_tree_new(void)
 void test_tree_delete(void)
 {
   tree_t *tree = tmp_tree_new();
-  tree_delete(tree, true, true);
-  CU_ASSERT_TRUE(tree == NULL);
-  CU_ASSERT_FALSE(tree != NULL);
+  tree_delete(tree, false, false);
+  CU_ASSERT_TRUE(tree != NULL);
 }
 
 
@@ -291,15 +295,15 @@ void test_tree_size(void)
 {
   tree_t *tree = tmp_tree_new();
   CU_ASSERT_TRUE(tree_size(tree) == 10);
-  CU_ASSERT_TRUE(tree_size(tree_new(NULL, NULL, NULL, NULL)) == 0);
+  CU_ASSERT_TRUE(tree_size(tree_new(NULL, NULL, NULL, (element_comp_fun) tree_cmp)) == 0);
 }
 
 
 void test_tree_depth(void)
 {
   tree_t *tree = tmp_tree_new();
-  CU_ASSERT_TRUE(tree_depth(tree) == 3);
-  CU_ASSERT_TRUE(tree_depth(tree_new(NULL, NULL, NULL, NULL)) == 0);
+  CU_ASSERT_TRUE(tree_depth(tree) == 4);
+  CU_ASSERT_TRUE(tree_depth(tree_new(NULL, NULL, NULL, (element_comp_fun) tree_cmp)) == 0);
 }
 
 void test_tree_has_key(void)
@@ -321,8 +325,7 @@ void test_tree_get(void)
       tree_key_t tmpkey = { .p = name[i] };
       elem_t tmpvalue = { .p = NULL };
       tree_get(tree, tmpkey, &tmpvalue);
-      CU_ASSERT_TRUE( (*tree->cmp_f)(tmpkey, tmpvalue) == 0);
-      CU_ASSERT_FALSE((*tree->cmp_f)(tmpkey, tmpvalue) != 0);
+      CU_ASSERT_TRUE( strcmp(desc[i], tmpvalue.p)  == 0);
     }
   
 }
@@ -334,9 +337,9 @@ void test_tree_remove(void)
     {
       tree_key_t tmpkey = { .p = name[i] };
       elem_t tmp;
-      CU_ASSERT_TRUE(tree_size(tree) == 11-i);
-      tree_remove(tree, tmpkey, &tmp);
       CU_ASSERT_TRUE(tree_size(tree) == 10-i);
+      tree_remove(tree, tmpkey, &tmp);
+      CU_ASSERT_TRUE(tree_size(tree) == 9-i);
     }
 }
 
@@ -353,7 +356,7 @@ void test_tree_insert(void)
 
 void test_add_goods(void)
 {
-  tree_t *tree = tree_new(NULL, NULL, NULL, NULL);
+  tree_t *tree = tree_new(NULL, NULL, NULL, (element_comp_fun) tree_cmp);
   for (int i = 0; i < 10; i++)
     {
       tree_key_t tmp_name = { .p = name[i] };
@@ -370,15 +373,16 @@ void test_add_goods(void)
 
 tree_t *tmp_add_goods(void)
 {
-  tree_t *tree = tree_new(NULL, NULL, NULL, NULL);
+  tree_t *tree = tree_new(NULL, NULL, NULL, (element_comp_fun) tree_cmp);
   for (int i = 0; i < 10; i++)
     {
-      tree_key_t tmp_name = { .p = name[i] };
-      char *tmp_desc = desc[i];
+      tree_key_t tmp_name = { .p = strdup(name[i]) };
+      char *tmp_desc = strdup(desc[i]);
       int tmp_price = price[i];
-      char *tmp_shelf_name = shelf[i];
+      char *tmp_shelf_name = strdup(shelf[i]);
       int tmp_shelf_amount = amount[i];
       item_t *item = make_item(tmp_desc, tmp_price);
+      
       add_shelf(item, tmp_shelf_name, tmp_shelf_amount);
       insert_goods(tree, tmp_name, (elem_t){ .p = item });
       CU_ASSERT_TRUE(tree_has_key(tree, (tree_key_t) { .p =name[i] }));
@@ -392,26 +396,40 @@ void test_remove_goods(void)
 {
   tree_t *tree = tmp_add_goods();
   action_t *tmp_action = action_new();
+  tree_key_t *keys = tree_keys(tree);
   for (int i = 0; i < 10; i++)
-    {
-      tree_key_t key = { .p = name[i] };
+    { 
       elem_t tmp = { .p = NULL };
-      tree_get(tree, key, &tmp);
-      goods_t goods = { .name = name[i], .item = tmp.p };
+      tree_get(tree, keys[i], &tmp);
+      goods_t goods = { .name = strdup(name[i]), .item = tmp.p };
       remove_from_catalog(tree, goods, tmp_action);
-      CU_ASSERT_FALSE(tree_has_key(tree, key));
+      CU_ASSERT_FALSE(tree_has_key(tree, (tree_key_t) { .p = name[i] }));
     }
 }
 
-/*
-void test_undo_goods(void)
-{
-  test_add_goods();
-  test_remove_goods();
-  CU_ASSERT_TRUE( undo_action(test_remove_goods()) == test_add_goods());
-}
-*/
 
+void test_undo_action(void)
+{
+  action_t *action = action_new();
+  tree_t *tree = tree_new(NULL, NULL, NULL, (element_comp_fun) tree_cmp);
+
+  for (int i = 0; i < 10; ++i)
+    {
+      tree_key_t key = { .p = strdup(name[i]) };
+      tree_insert(tree, key, (elem_t) { .i = i });
+    }
+
+  tree_key_t *keys = tree_keys(tree);
+  elem_t tmp = { .p = NULL };
+  tree_get(tree, keys[0], &tmp);
+  goods_t remove = { .name = keys[0].p, .item = tmp.p };
+
+  remove_from_catalog(tree, remove, action);
+
+  undo_action(tree, action);
+
+  CU_ASSERT_TRUE(tree_has_key(tree, keys[0]));
+}
 
 
 int main(void){
@@ -486,13 +504,14 @@ int main(void){
 
   if (
       (NULL == CU_add_test(dbSuite, "add_goods", test_add_goods)) ||
-      (NULL == CU_add_test(dbSuite, "remove_goods", test_remove_goods))
+      (NULL == CU_add_test(dbSuite, "remove_goods", test_remove_goods)) ||
+      (NULL == CU_add_test(dbSuite, "undo_action", test_undo_action))
       )
     {
       CU_cleanup_registry();
       return CU_get_error();
     }
-
+  
   /* Run all tests using the CUnit Basic interface */
   CU_basic_set_mode(CU_BRM_VERBOSE);
   CU_basic_run_tests();

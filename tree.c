@@ -192,7 +192,7 @@ int tree_depth(tree_t *tree)
 /// \param key key to compare with
 /// \returns: direction to move in, in the form of an enumerate
 enum key_compare compare_keys(tree_t *tree, tree_key_t node_key, tree_key_t cmp_key)
-{  
+{
   int a = (*tree->cmp_f)(node_key, cmp_key);
 
   if (a == 0)     return KEYS_MATCH;
