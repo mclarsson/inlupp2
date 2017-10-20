@@ -28,8 +28,12 @@ lager: lager.c tree.o list.o db.o utils.o
 valgrind: clean lager
 	@valgrind --leak-check=yes ./lager
 
-test: clean
+test:
 	gcc -o test  ctests.c -lcunit && ./test
+
+.PHONY: clean_test
+clean_test:
+	@rm test
 
 # debug
 debug: clean lager
