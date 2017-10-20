@@ -693,22 +693,10 @@ void list_goods(tree_t *tree)
   } while (!stop);
 }
 
-/// Edits parameters of current items
-///
-/// \param tree the tree containing the items
-/// \param action what to do in case of an undo call
-void edit_goods(tree_t *tree, action_t *action)
-{ 
-  goods_t goods = select_goods(tree);
-
-  if (goods.name == NULL && goods.item == NULL)
-    {
-      puts("Finns inget att redigera!");
-      return;
-    }
-  
+void copy_goods_to_action(action_t *action, goods_t goods)
+{
   list_t *shelves = goods.item->shelves;
-
+  
   // Copy item for undo
   action->type = EDIT;
   action->edited = goods.item;
@@ -730,6 +718,26 @@ void edit_goods(tree_t *tree, action_t *action)
       
       list_append(action->original.shelves, tmpshelf); 
     }
+}
+
+/// Edits parameters of current items
+///
+/// \param tree the tree containing the items
+/// \param action what to do in case of an undo call
+void edit_goods(tree_t *tree, action_t *action)
+{ 
+  goods_t goods = select_goods(tree);
+
+  if (goods.name == NULL && goods.item == NULL)
+    {
+      return;
+    }
+
+  copy_goods_to_action(action, goods);
+  
+  list_t *shelves = goods.item->shelves;
+  int shelves_length = list_length(shelves);
+  
   // Prints the selected item for the user
   print_item(goods.name, goods.item);
 
@@ -747,6 +755,7 @@ void edit_goods(tree_t *tree, action_t *action)
     case 'B':
       output("Nuvarande beskrivning", goods.item->description);
       puts("----------------------");
+      
       free(goods.item->description);
       goods.item->description = ask_question_string("Ny beskrivning: ");
       break;

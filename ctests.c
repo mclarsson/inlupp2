@@ -385,6 +385,7 @@ tree_t *tmp_add_goods(void)
       
       add_shelf(item, tmp_shelf_name, tmp_shelf_amount);
       insert_goods(tree, tmp_name, (elem_t){ .p = item });
+      
       CU_ASSERT_TRUE(tree_has_key(tree, (tree_key_t) { .p =name[i] }));
      }
   return tree;
@@ -416,19 +417,35 @@ void test_undo_action(void)
   for (int i = 0; i < 10; ++i)
     {
       tree_key_t key = { .p = strdup(name[i]) };
-      tree_insert(tree, key, (elem_t) { .i = i });
+      char *tmp_desc = strdup(desc[i]);
+      int tmp_price = price[i];
+      char *tmp_shelf_name = strdup(shelf[i]);
+      int tmp_shelf_amount = amount[i];
+      item_t *item = make_item(tmp_desc, tmp_price);
+      
+      add_shelf(item, tmp_shelf_name, tmp_shelf_amount);
+      
+      tree_insert(tree, key, (elem_t) { .p = item });
     }
 
   tree_key_t *keys = tree_keys(tree);
   elem_t tmp = { .p = NULL };
   tree_get(tree, keys[0], &tmp);
-  goods_t remove = { .name = keys[0].p, .item = tmp.p };
+  goods_t goods = { .name = keys[0].p, .item = tmp.p };
 
-  remove_from_catalog(tree, remove, action);
+  remove_from_catalog(tree, goods, action);
 
   undo_action(tree, action);
 
   CU_ASSERT_TRUE(tree_has_key(tree, keys[0]));
+
+  copy_goods_to_action(action, goods);
+
+  goods.item->description = strdup("desc");
+
+  undo_action(tree, action);
+  
+  CU_ASSERT_TRUE( strcmp(goods.item->description, "desc") != 0 );
 }
 
 
